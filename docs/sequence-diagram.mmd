@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Client
+    participant Server
+
+    %% Initialisation
+    Note over Client,Server: GET file.txt
+    Client->>Server: Establish connection
+    Server<<-->>Client: Connection established
+    Client->>Server: Download a file
+    Server--)Client: Send request result
+    Server--)Client: Send file
+    Server->>Server: Close socket
+    Server<<-->>Client: Connection closed
+
+    Note over Client,Server: CREATE other_file.txt
+    Client->>Server: Establish connection
+    Server<<-->>Client: Connection established
+    Client->>Server: Annonce that wants to create a file
+    Client->>Server: Send the content of the file
+    Server--)Client: Send request result
+    Server->>Server: Close socket
+    Server<<-->>Client: Connection closed
+
+    Note over Client,Server: DELETE file.txt
+    Client->>Server: Establish connection
+    Server<<-->>Client: Connection established
+    Client->>Server: Delete file
+    Server--)Client: Send request result
+    Server->>Server: Close socket
+    Server<<-->>Client: Connection closed
