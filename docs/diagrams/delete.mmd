@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Server
+
+    Note over Client,Server: DELETE file.txt
+    Client->>Server: Establish connection
+    Server<<-->>Client: Connection established
+    Client->>Server: Delete file
+    Server--)Client: Send request result
+    Server->>Server: Close socket
+    Server<<-->>Client: Connection closed
