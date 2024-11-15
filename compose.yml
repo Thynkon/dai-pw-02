@@ -4,10 +4,10 @@ services:
     build: .
     ports:
       # exposing on localhost for security reasons (we don't have authentication)
-      - "127.0.0.1:${SERVER_PORT:-8020}:8020"  
+      - "${SERVER_ADDRESS:-127.0.0.1}:${SERVER_PORT:-1234}:1234"
     volumes:
       - "data:/data"
-    command: "--mode server --root-directory=/data --port=8020"
+    command: "--mode server --connections ${MAX_CONNECTIONS:-2} --address 0.0.0.0"
 
 volumes:
   data:
