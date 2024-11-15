@@ -1,12 +1,31 @@
 #import "@preview/ilm:1.3.0": *
 #import "@preview/gentle-clues:1.0.0": *
 #import "@preview/chronos:0.1.0"
+#import "@preview/codly:1.0.0": *
 
 #show: ilm.with(
   title: [SimpFT protocol],
   author: "Kenan Augsburger & Mário Ferreira",
   date: datetime.today(),
 )
+#show: codly-init.with()
+
+#codly(
+  languages: (
+    bin: (
+      name: "binary",
+      icon: text(font: "JetBrainsMono NFP", " "),
+      color: rgb("#f43f5e")
+    ),
+    txt: (
+      name: "text",
+      icon: text(font: "JetBrainsMono NFP", "󰦨 "),
+      color: rgb("#64748b")
+    ),
+  )
+)
+
+#show raw: set text(font: "JetBrainsMono NFP")
 
 #show link: underline
 
@@ -94,7 +113,7 @@ colon separated list of files and folders. Each folders have a trailing `/`
 appended to them.
 
 On error, only the error code is sent. The code matches one of:
-- EACCESS
+- EACCES
 - ENOENT
 
 === Get file
@@ -112,7 +131,7 @@ GET <PATH>
 ```txt
 <CODE>
 ```
-```
+```bin
 <DATA>
 ```
 
@@ -120,39 +139,95 @@ On a successful request, the server answers with the code `0`, followed by the
 content of the file in binary form.
 
 On error, only the error code is sent. The code matches one of:
-- EACCESS
+- EACCES
 - ENOENT
 
 
+=== Put file
+
+The client sends a put request to the server to upload a file.
+
 ==== Request
 
-=== Put file
+```txt
+PUT <PATH>
+```
+
+```bin
+<DATA>
+```
+
+The client tells the server that the file should be saved to the given path and
+immediately follows up with the content of the file.
+
+If the path uses directories not present on the server, they will be created if
+possible.
+
+==== Response
+
+```txt
+<CODE>
+```
+
+On a successful request, the server answers with the code `0` indicating that
+the file was saved successfully.
+
+On error, the code matches one of:
+- EACCES
+- EFBIG
+- EISDIR
+- ENOENT
 
 === Delete file
 
-#task[
-  specify each messages with
+The client sends a delete request to the server to delete a file.
 
-  - Description
-  - Request
-  - Response
-]
+==== Request
+
+```txt
+DELETE <PATH>
+```
+
+Where path is the path to the file or directory to delete.
+
+If the path points to a directory, the whole directory is removed recursively.
+
+==== Response
+
+```txt
+<CODE>
+```
+
+On a successful request, the server answers with the code `0` indicating that the
+file or folder was removed successfully.
+
+On error, the code matches one of:
+- EACCES
+- ENOENT
 
 == Section 4 - Examples
 
-#task[
-  add examples with sequence diagrams
-]
+=== List
 
-=== Functional example
+#align(center,[
+  #image("./diagrams/list.svg" )
+])
 
-#chronos.diagram({
-  import chronos: *
-  _par("Client")
-  _par("Server")
+=== Get
 
-  _seq("Client", "Server", comment: "Establish connection")
-  _seq("Server", "Server", comment: "Do something")
-  _seq("Server", "Client", comment: "Connection established")
-})
+#align(center,[
+  #image("./diagrams/get.svg" )
+])
+
+=== Put
+
+#align(center,[
+  #image("./diagrams/put.svg" )
+])
+
+=== Delete
+
+#align(center,[
+  #image("./diagrams/delete.svg" )
+])
 
