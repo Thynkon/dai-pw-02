@@ -1,6 +1,8 @@
 package ch.heigvd.dai;
 
 import java.io.File;
+
+import ch.heigvd.dai.commands.Root;
 import picocli.CommandLine;
 
 @CommandLine.Command(description = "A small CLI with subcommands to demonstrate picocli.", version = "1.0.0", subcommands = {
@@ -21,7 +23,14 @@ public class Main {
         new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath())
             .getName();
 
-    int exitCode = new CommandLine(new Main()).setCommandName(jarFilename).execute(args);
+    // Create root command
+    Root root = new Root();
+
+    // Calculate execution time for root command and its subcommands
+    int exitCode = new CommandLine(root)
+        .setCommandName(jarFilename)
+        .setCaseInsensitiveEnumValuesAllowed(true)
+        .execute(args);
 
     System.exit(exitCode);
   }
