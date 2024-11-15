@@ -44,6 +44,7 @@ allows a client to interact with files on a server.
 == Section 2 - Transport protocol
 
 The SimpFT protocol is a text based protocol. It uses TCP to ensure reliability.
+The default port is 1234.
 
 Thee protocol has three kinds of messages:
 

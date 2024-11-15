@@ -1,0 +1,8 @@
+# Ignore everything
+*
+# Allow
+!/src
+!/pom.xml
+!/mvnw
+!/dependency-reduced-pom.xml
+!/.mvn

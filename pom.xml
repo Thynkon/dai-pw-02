@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ch.heigvd.dai</groupId>
-  <artifactId>java-intellij-idea-and-maven</artifactId>
+  <artifactId>simpft</artifactId>
   <version>1.0</version>
 
   <dependencies>
