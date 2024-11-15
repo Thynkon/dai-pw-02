@@ -83,6 +83,9 @@ The client can do the following actions:
 
 The `Status` values use the values defined by the c standard library in #link("https://man7.org/linux/man-pages/man3/errno.3.html")[errno.h]
 
+When an invalid message is received, the server should answer with `ENOTSUP` and
+flush its buffer.
+
 == Section 3 - Messages
 
 === List files
@@ -141,11 +144,12 @@ content of the file in binary form.
 On error, only the error code is sent. The code matches one of:
 - EACCES
 - ENOENT
+- EISDIR
 
 
 === Put file
 
-The client sends a put request to the server to upload a file.
+The client sends a put request to the server to upload a file or create a directory.
 
 ==== Request
 
@@ -153,15 +157,15 @@ The client sends a put request to the server to upload a file.
 PUT <PATH>
 ```
 
+The first part of the request provides the path to the file or directory on the
+server. A trailing `/` indicates that a directory should be created.
+
 ```bin
 <DATA>
 ```
 
-The client tells the server that the file should be saved to the given path and
-immediately follows up with the content of the file.
-
-If the path uses directories not present on the server, they will be created if
-possible.
+If the path doesn't end with a `/`, the rest of the request contains the file
+content in binary.
 
 ==== Response
 
@@ -170,7 +174,7 @@ possible.
 ```
 
 On a successful request, the server answers with the code `0` indicating that
-the file was saved successfully.
+the file or directory was created successfully.
 
 On error, the code matches one of:
 - EACCES
