@@ -34,6 +34,12 @@
 
 ## Getting Started
 
+SimpFT is a simple file transfer application to upload and download files on a
+server.
+
+For installation and usage, see more informations in the [docs](./docs/README.md)
+
+You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
 
 ### Prerequisites
 
@@ -77,6 +83,8 @@ java -jar target/<filename>.jar --help
 #### Docker
 
 The application can be used with docker.
+
+A more detailed documentation can be found in the [docs](./docs/README.md#docker)
 
 #### Github actions
 

@@ -1,0 +1,13 @@
+services:
+  server:
+    image: dai-lab-02:latest
+    build: .
+    ports:
+      # exposing on localhost for security reasons (we don't have authentication)
+      - "127.0.0.1:${SERVER_PORT:-8020}:8020"  
+    volumes:
+      - "data:/data"
+    command: "--mode server --root-directory=/data --port=8020"
+
+volumes:
+  data:
