@@ -3,8 +3,15 @@ package ch.heigvd.dai.tcp;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Server extends Service {
 
@@ -12,7 +19,6 @@ public class Server extends Service {
   // private final String address;
   private static final int SERVER_ID = (int) (Math.random() * 1000000);
   private final int number_of_threads;
-  private static final String TEXTUAL_DATA = "👋 from Server " + SERVER_ID;
   private final InetAddress iaddress;
 
   public Server() throws UnknownHostException {
@@ -72,24 +78,81 @@ public class Server extends Service {
         System.out.println(
             "[Server " + SERVER_ID + "] received textual data from client: " + in.readLine());
 
-        try {
-          System.out.println(
-              "[Server " + SERVER_ID + "] sleeping for 10 seconds to simulate a long operation");
-          Thread.sleep(10000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+        delete("/data/test", out);
 
-        System.out.println(
-            "[Server " + SERVER_ID + "] sending response to client: " + TEXTUAL_DATA);
-
-        out.write(TEXTUAL_DATA + "\n");
         out.flush();
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
       } catch (IOException e) {
         System.out.println("[Server " + SERVER_ID + "] exception: " + e);
       }
+    }
+
+    /**
+     * Handles DELETE request and its given path.
+     * 
+     * @param path to delete
+     * @param out  The output where the result will be sent
+     * @throws IOException when unable to write to the socket output
+     */
+    private boolean delete(String path, BufferedWriter out) throws IOException {
+      Path p = null;
+
+      try {
+        p = Path.of(path);
+      } catch (InvalidPathException e) {
+        // TODO: Replace with actual value
+        out.write("EINVAL\4");
+        return false;
+      }
+
+      File file = p.toFile();
+
+      if (!file.exists()) {
+        // TODO: Replace with actual value
+        out.write("ENOENT\4");
+        return false;
+      }
+
+      if (!file.canWrite()) {
+        out.write("EACCES\4");
+        return false;
+      }
+
+      if (file.isDirectory()) {
+        // Delete the directory content recursively
+        // @see https://www.baeldung.com/java-delete-directory#conclusion-1
+        try (Stream<Path> paths = Files.walk(p)) {
+          // Sort in reverse order to treat the deepest levels first
+          List<File> files = paths.sorted(Comparator.reverseOrder())
+              .map(Path::toFile)
+              .collect(Collectors.toList());
+
+          // Check if we can delete it all
+          if (!files.stream().allMatch(File::canWrite)) {
+            out.write("EACCES\4");
+            return false;
+          }
+
+          files.forEach((f) -> System.out.println("File:" + f));
+
+          if (!files.stream().allMatch(File::delete)) {
+            out.write("EIO\4");
+            return false;
+          }
+
+        } catch (IOException e) {
+          out.write("EIO\n");
+          System.err.println("Unable to delete directory");
+          return false;
+        }
+      } else {
+        file.delete();
+      }
+
+      out.write("0\n");
+
+      return true;
     }
   }
 }

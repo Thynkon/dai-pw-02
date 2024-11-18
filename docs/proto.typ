@@ -209,6 +209,7 @@ file or folder was removed successfully.
 On error, the code matches one of:
 - EACCES
 - ENOENT
+- EINVAL
 
 == Section 4 - Examples
 
