@@ -3,17 +3,25 @@ package ch.heigvd.dai.tcp;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import ch.heigvd.dai.Errno;
 
 public class Server extends Service {
-
-  // private final int port;
-  // private final String address;
   private static final int SERVER_ID = (int) (Math.random() * 1000000);
   private final int number_of_threads;
   private static final String TEXTUAL_DATA = "👋 from Server " + SERVER_ID;
   private final InetAddress iaddress;
+  private static final String DELIMITER = ":";
+  private static final String NEW_LINE = "\n";
+  private static final int EOT = 0x04;
 
   public Server() throws UnknownHostException {
     this("localhost", 1234, 2);
@@ -22,7 +30,6 @@ public class Server extends Service {
   public Server(String address, int port, int number_of_connections) throws UnknownHostException {
     this.port = port;
     this.number_of_threads = number_of_connections;
-    // this.address = InetAddress.getByName(address);
     this.address = address;
     this.iaddress = InetAddress.getByName(address);
   }
@@ -54,6 +61,46 @@ public class Server extends Service {
       this.socket = socket;
     }
 
+    public void list(BufferedReader in, BufferedWriter out) throws IOException {
+      String work_dir_path = "/tmp/dai";
+      StringBuilder sb = new StringBuilder();
+      File work_dir = new File(work_dir_path);
+
+      if (!work_dir.exists()) {
+        sendError(out, Errno.ENOENT);
+        return;
+      } else if (!work_dir.canRead()) {
+        sendError(out, Errno.EACCES);
+      } else {
+        out.write(String.valueOf(0));
+        out.write(Server.NEW_LINE);
+        out.flush();
+      }
+
+      try (Stream<Path> paths = Files.walk(work_dir.toPath())) {
+        paths
+            .forEach(path -> {
+              sb.append(path.toString());
+              if (Files.isDirectory(path)) {
+                sb.append("/");
+              }
+              sb.append(Server.DELIMITER);
+            });
+      }
+      // remove extra : at the end
+      sb.delete(sb.length() - 1, sb.length());
+
+      out.write(sb.toString());
+      out.write(Server.EOT);
+      out.flush();
+    }
+
+    private void sendError(BufferedWriter out, int errno) throws IOException {
+      out.write(String.valueOf(errno));
+      out.write(Server.EOT);
+      out.flush();
+    }
+
     @Override
     public void run() {
       try (socket; // This allow to use try-with-resources with the socket
@@ -72,19 +119,10 @@ public class Server extends Service {
         System.out.println(
             "[Server " + SERVER_ID + "] received textual data from client: " + in.readLine());
 
-        try {
-          System.out.println(
-              "[Server " + SERVER_ID + "] sleeping for 10 seconds to simulate a long operation");
-          Thread.sleep(10000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+        list(in, out);
 
         System.out.println(
             "[Server " + SERVER_ID + "] sending response to client: " + TEXTUAL_DATA);
-
-        out.write(TEXTUAL_DATA + "\n");
-        out.flush();
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
       } catch (IOException e) {

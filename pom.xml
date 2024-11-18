@@ -13,7 +13,7 @@
       <artifactId>picocli</artifactId>
       <version>4.7.6</version>
     </dependency>
-    </dependencies>
+  </dependencies>
 
   <properties>
         <maven.compiler.source>21</maven.compiler.source>
