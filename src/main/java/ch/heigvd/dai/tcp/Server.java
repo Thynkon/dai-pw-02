@@ -19,9 +19,9 @@ public class Server extends Service {
   private final int number_of_threads;
   private static final String TEXTUAL_DATA = "👋 from Server " + SERVER_ID;
   private final InetAddress iaddress;
-  private static final String DELIMITER = ":";
-  private static final String NEW_LINE = "\n";
-  private static final int EOT = 0x04;
+  public static final String DELIMITER = ":";
+  public static final String NEW_LINE = "\n";
+  public static final int EOT = 0x04;
 
   public Server() throws UnknownHostException {
     this("localhost", 1234, 2);
