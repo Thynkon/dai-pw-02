@@ -114,7 +114,8 @@ public class Server extends Service {
         return false;
       }
 
-      if (!file.canWrite()) {
+      if (!file.getParentFile().canWrite()) {
+        // TODO: Replace with actual value
         out.write("EACCES\4");
         return false;
       }
@@ -129,19 +130,21 @@ public class Server extends Service {
               .collect(Collectors.toList());
 
           // Check if we can delete it all
-          if (!files.stream().allMatch(File::canWrite)) {
+          if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
+            // TODO: Replace with actual value
             out.write("EACCES\4");
             return false;
           }
 
-          files.forEach((f) -> System.out.println("File:" + f));
-
           if (!files.stream().allMatch(File::delete)) {
+            // Should never happen but doesn't hurt to check
+            // TODO: Replace with actual value
             out.write("EIO\4");
             return false;
           }
 
         } catch (IOException e) {
+          // TODO: Replace with actual value
           out.write("EIO\n");
           System.err.println("Unable to delete directory");
           return false;
