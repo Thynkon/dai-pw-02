@@ -75,12 +75,35 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
-        System.out.println(
-            "[Server " + SERVER_ID + "] received textual data from client: " + in.readLine());
+        boolean result;
 
-        delete("/data/test", out);
+        do {
 
-        out.flush();
+          String[] args = in.readLine().split(" ");
+
+          if (args.length < 1) {
+            out.write("EINVAL\4");
+            out.flush();
+            return;
+          }
+
+          result = switch (args[0]) {
+            case "DELETE" -> {
+              if (args.length != 2) {
+                out.write("EINVAL\4");
+                yield false;
+              }
+
+              yield delete(args[1], out);
+            }
+            default -> {
+              out.write("ENOTSUP\4");
+              yield false;
+            }
+          };
+
+          out.flush();
+        } while (result);
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
       } catch (IOException e) {
