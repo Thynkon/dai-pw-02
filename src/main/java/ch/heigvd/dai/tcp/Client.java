@@ -8,12 +8,12 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import ch.heigvd.dai.Errno;
 
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
-  private static final String TEXTUAL_DATA = "👋 from Client " + CLIENT_ID;
 
   public Client() {
     this("localhost", 1234);
@@ -65,18 +65,31 @@ public class Client extends Service {
         BufferedWriter out = new BufferedWriter(
             new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));) {
       System.out.println("[Client " + CLIENT_ID + "] connected to " + address + ":" + port);
-      System.out.println(
-          "[Client "
-              + CLIENT_ID
-              + "] sending textual data to server "
-              + address
-              + ":"
-              + port
-              + ": "
-              + TEXTUAL_DATA);
 
-      list(in, out, "/asdf");
+      Scanner sc = new Scanner(System.in);
+      while (sc.hasNextLine()) {
+        String buffer = sc.nextLine();
+        if (buffer.toLowerCase().contains("exit")) {
+          System.out.println("Exiting");
+          break;
+        }
 
+        String[] tokens = buffer.split(" ");
+
+        if (tokens.length == 0) {
+          System.err.println("no action!");
+        }
+
+        try {
+          parseTokens(in, out, tokens);
+          System.out.println("");
+        } catch (IOException e) {
+          System.err.println("Got exception: " + e.getMessage());
+        }
+
+      }
+
+      sc.close();
     } catch (IOException e) {
       System.out.println("[Client " + CLIENT_ID + "] exception: " + e);
     }
