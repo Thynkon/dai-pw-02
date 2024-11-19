@@ -118,18 +118,26 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
-        String buffer = in.readLine();
-        String[] tokens = buffer.split(" ");
+        String buffer;
+        while ((buffer = in.readLine()) != null) { // Keep reading until the client closes the connection
+          String[] tokens = buffer.split(" ");
 
-        if (tokens.length == 0) {
-          System.err.println("no action!");
-        }
+          if (tokens.length == 0) {
+            System.err.println("no action!");
+            continue; // Skip to the next request
+          }
 
-        try {
-          server.parseTokens(in, out, tokens);
-          System.out.println("");
-        } catch (IOException e) {
-          System.err.println("Got exception: " + e.getMessage());
+          if (buffer.toLowerCase().contains("exit")) {
+            break;
+          }
+
+          try {
+            server.parseTokens(in, out, tokens);
+            out.flush(); // Ensure the response is sent immediately
+            System.out.println("");
+          } catch (IOException e) {
+            System.err.println("Got exception while parsing tokens: " + e.getMessage());
+          }
         }
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
