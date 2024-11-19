@@ -155,7 +155,7 @@ simply run the application like this:
 
 ```bash
 # Run as server
-java -jar simpft.jar --mode server --port 1234 --address localhost --connections 2
+java -jar simpft.jar --mode server --port 1234 --address localhost --connections 2 --root-dir /path/to/dir
 # Run client
 java -jar simpft.jar --mode client --port 1234 --address localhost
 ```
@@ -211,7 +211,14 @@ java -jar simpft-1.0.jar --help
 You can run the server either manually using
 
 ```bash
-docker run --rm -p 127.0.0.1:1234:1234 -v "./server_data:/data" dai-lab-02:latest --mode server
+docker run --rm           \
+  -p 127.0.0.1:1234:1234  \
+  -v "./server_data:/data"\
+  dai-lab-02:latest       \
+  --mode server           \
+  --address 0.0.0.0       \
+  --root-dir /data        \
+  --connections 2
 ```
 
 Or with the [compose.yml][compose]
