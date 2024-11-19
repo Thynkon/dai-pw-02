@@ -1,7 +1,14 @@
 package ch.heigvd.dai.tcp;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,16 +25,14 @@ public class Server extends Service {
   public static final String DELIMITER = ":";
   public static final String NEW_LINE = "\n";
   public static final int EOT = 0x04;
+  public final Path work_dir;
 
-  public Server() throws UnknownHostException {
-    this("localhost", 1234, 2);
-  }
-
-  public Server(String address, int port, int number_of_connections) throws UnknownHostException {
+  public Server(String address, int port, int number_of_connections, Path work_dir) throws UnknownHostException {
     this.port = port;
     this.number_of_threads = number_of_connections;
     this.address = address;
     this.iaddress = InetAddress.getByName(address);
+    this.work_dir = work_dir;
   }
 
   @Override
@@ -55,17 +60,14 @@ public class Server extends Service {
     out.flush();
   }
 
-  public void list(BufferedReader in, BufferedWriter out, String path) throws IOException {
-    String work_dir_path = "/tmp/dai" + path;
-    // String work_dir_path = "/tmp/dai";
-    System.out.println("checkong on server at:" + work_dir_path);
+  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
     StringBuilder sb = new StringBuilder();
-    File work_dir = new File(work_dir_path);
+    Path full_path = work_dir.resolve(path).normalize();
 
-    if (!work_dir.exists()) {
+    if (!Files.exists(full_path)) {
       sendError(out, Errno.ENOENT);
       return;
-    } else if (!work_dir.canRead()) {
+    } else if (!Files.isReadable(full_path)) {
       sendError(out, Errno.EACCES);
     } else {
       out.write(String.valueOf(0));
@@ -73,7 +75,7 @@ public class Server extends Service {
       out.flush();
     }
 
-    try (Stream<Path> paths = Files.walk(work_dir.toPath())) {
+    try (Stream<Path> paths = Files.walk(work_dir)) {
       paths
           .forEach(p -> {
             sb.append(p.toString());

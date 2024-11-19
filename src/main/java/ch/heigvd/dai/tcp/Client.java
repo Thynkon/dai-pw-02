@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -24,7 +25,7 @@ public class Client extends Service {
     this.port = port;
   }
 
-  public void list(BufferedReader in, BufferedWriter out, String path) throws IOException {
+  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
     out.write("LIST " + path + Server.NEW_LINE);
     out.flush();
 
