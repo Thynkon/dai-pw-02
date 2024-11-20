@@ -5,13 +5,14 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Scanner;
 
 import ch.heigvd.dai.Errno;
+import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
@@ -25,13 +26,55 @@ public class Client extends Service {
     this.port = port;
   }
 
-  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
-    out.write("LIST " + path + Server.NEW_LINE);
+  private void usage() {
+    System.out.println("Available commands: \n");
+    System.out.println("\tLIST <path_to_dir>");
+    System.out.println("\tGET <path_to_file>");
+    System.out.println("\tPUT <path_to_file>");
+    System.out.println("\tDELETE <path_to_file>\n");
+  }
+
+  public void sendRequest(BufferedReader in, BufferedWriter out, String command)
+      throws IOException {
+    out.write(command);
     out.flush();
 
-    int status = Character.getNumericValue(in.read());
+    in.mark(1);
+    if (in.read() == -1) {
+      throw new ServerHasGoneException();
+    }
+    in.reset();
+  }
+
+  public boolean parseStatus(BufferedReader in) throws IOException {
+    int byteRead;
+    StringBuilder buffer = new StringBuilder();
+
+    // status like ENOTDIR (20) are sent as two different chars/bytes: 2 (0x32) and
+    // then 0 (0x30)
+    while ((byteRead = in.read()) != -1) {
+      buffer.append((char) byteRead);
+
+      if (byteRead == Server.EOT) {
+        break;
+      }
+    }
+
+    int status = Integer.parseInt(buffer.toString().trim());
     if (status != 0) {
       System.err.println("Got error: " + Errno.getErrorMessage(status));
+
+      return false;
+    }
+
+    return true;
+  }
+
+  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
+    String command = "LIST " + path + Server.NEW_LINE;
+    sendRequest(in, out, command);
+
+    if (!parseStatus(in)) {
       return;
     }
 
@@ -57,7 +100,6 @@ public class Client extends Service {
 
   @Override
   public void launch() {
-    System.out.println("[Client " + CLIENT_ID + "] starting with id " + CLIENT_ID);
     System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
 
     try (Socket socket = new Socket(address, port);
@@ -65,34 +107,55 @@ public class Client extends Service {
             new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         BufferedWriter out = new BufferedWriter(
             new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));) {
-      System.out.println("[Client " + CLIENT_ID + "] connected to " + address + ":" + port);
 
-      Scanner sc = new Scanner(System.in);
-      while (sc.hasNextLine()) {
-        String buffer = sc.nextLine();
-        if (buffer.toLowerCase().contains("exit")) {
-          System.out.println("Exiting");
-          break;
-        }
+      // Run REPL until user quits
+      while (!socket.isClosed()) {
+        // Display prompt
+        System.out.print("> ");
 
-        String[] tokens = buffer.split(" ");
+        // Read user input
+        Reader inputReader = new InputStreamReader(System.in, StandardCharsets.UTF_8);
+        BufferedReader bir = new BufferedReader(inputReader);
+        String buffer = bir.readLine();
 
-        if (tokens.length == 0) {
-          System.err.println("no action!");
+        // ctl-d
+        if (buffer == null) {
+          socket.close();
+          continue;
         }
 
         try {
-          parseTokens(in, out, tokens);
-          System.out.println("");
-        } catch (IOException e) {
-          System.err.println("Got exception: " + e.getMessage());
+          String[] tokens = buffer.split(" ", 2);
+          if (buffer.toLowerCase().contains("exit")) {
+            socket.close();
+            break;
+          }
+
+          if (tokens.length == 0) {
+            System.err.println("no action!");
+            continue;
+          }
+
+          try {
+            parseTokens(in, out, tokens);
+            System.out.println("");
+          } catch (ServerHasGoneException e) {
+            System.err.println(e.getMessage());
+          } catch (IOException e) {
+            System.err.println("Got exception: " + e.getMessage());
+          } catch (IllegalArgumentException e) {
+            System.err.println("Invalid command!");
+            usage();
+          }
+        } catch (Exception e) {
+          System.out.println("Invalid command. Please try again.");
+          System.out.println(e.getMessage());
+          continue;
         }
-
       }
-
-      sc.close();
-    } catch (IOException e) {
-      System.out.println("[Client " + CLIENT_ID + "] exception: " + e);
+      System.out.println("[Client] Closing connection and quitting...");
+    } catch (Exception e) {
+      System.out.println("[Client] Exception: " + e);
     }
   }
 }

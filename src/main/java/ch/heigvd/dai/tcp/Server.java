@@ -65,13 +65,18 @@ public class Server extends Service {
     Path full_path = work_dir.resolve(path).normalize();
 
     if (!Files.exists(full_path)) {
+      System.out.println("sending enoent");
       sendError(out, Errno.ENOENT);
+      return;
+    } else if (!Files.isDirectory(full_path)) {
+      System.out.println("sending ENOTDIR");
+      sendError(out, Errno.ENOTDIR);
       return;
     } else if (!Files.isReadable(full_path)) {
       sendError(out, Errno.EACCES);
     } else {
       out.write(String.valueOf(0));
-      out.write(Server.NEW_LINE);
+      out.write(Server.EOT);
       out.flush();
     }
 
