@@ -55,10 +55,23 @@ public class Client extends Service {
 
   }
 
+  public void delete(BufferedReader in, BufferedWriter out, Path path) throws IOException {
+    out.write("DELETE " + path + Server.NEW_LINE);
+    out.flush();
+
+    int status = Character.getNumericValue(in.read());
+    // remove \n or EOT chars
+    in.read();
+    if (status != 0) {
+      System.err.println("Got error: " + Errno.getErrorMessage(status));
+      return;
+    }
+
+    // TODO: process result ?
+  }
+
   @Override
   public void launch() {
-    System.out.println("[Client " + CLIENT_ID + "] starting with id " + CLIENT_ID);
-    System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
 
     try (Socket socket = new Socket(address, port);
         BufferedReader in = new BufferedReader(
@@ -92,7 +105,8 @@ public class Client extends Service {
 
       sc.close();
     } catch (IOException e) {
-      System.out.println("[Client " + CLIENT_ID + "] exception: " + e);
+      System.out.println("[Client] exception: " + e);
     }
   }
+
 }
