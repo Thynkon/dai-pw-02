@@ -7,7 +7,7 @@ services:
       - "${SERVER_ADDRESS:-127.0.0.1}:${SERVER_PORT:-1234}:1234"
     volumes:
       - "data:/data"
-    command: "--mode server --connections ${MAX_CONNECTIONS:-2} --address 0.0.0.0"
+    command: "--mode server --connections ${MAX_CONNECTIONS:-2} --address 0.0.0.0 --work-dir /data"
 
 volumes:
   data:

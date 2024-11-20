@@ -1,36 +1,38 @@
 package ch.heigvd.dai.tcp;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Server extends Service {
+import ch.heigvd.dai.Errno;
 
-  // private final int port;
-  // private final String address;
+public class Server extends Service {
   private static final int SERVER_ID = (int) (Math.random() * 1000000);
   private final int number_of_threads;
   private final InetAddress iaddress;
+  public static final String DELIMITER = ":";
+  public static final String NEW_LINE = "\n";
+  public static final int EOT = 0x04;
+  public final Path work_dir;
 
-  public Server() throws UnknownHostException {
-    this("localhost", 1234, 2);
-  }
-
-  public Server(String address, int port, int number_of_connections) throws UnknownHostException {
+  public Server(String address, int port, int number_of_connections, Path work_dir) throws UnknownHostException {
     this.port = port;
     this.number_of_threads = number_of_connections;
-    // this.address = InetAddress.getByName(address);
     this.address = address;
     this.iaddress = InetAddress.getByName(address);
+    this.work_dir = work_dir;
   }
 
   @Override
@@ -45,19 +47,60 @@ public class Server extends Service {
 
       while (!serverSocket.isClosed()) {
         Socket clientSocket = serverSocket.accept();
-        executor.submit(new ClientHandler(clientSocket));
+        executor.submit(new ClientHandler(clientSocket, this));
       }
     } catch (IOException e) {
       System.out.println("[Server " + Server.SERVER_ID + "] exception: " + e);
     }
   }
 
+  private void sendError(BufferedWriter out, int errno) throws IOException {
+    out.write(String.valueOf(errno));
+    out.write(Server.EOT);
+    out.flush();
+  }
+
+  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    Path full_path = work_dir.resolve(path).normalize();
+
+    if (!Files.exists(full_path)) {
+      sendError(out, Errno.ENOENT);
+      return;
+    } else if (!Files.isReadable(full_path)) {
+      sendError(out, Errno.EACCES);
+    } else {
+      out.write(String.valueOf(0));
+      out.write(Server.NEW_LINE);
+      out.flush();
+    }
+
+    try (Stream<Path> paths = Files.walk(work_dir)) {
+      paths
+          .forEach(p -> {
+            sb.append(p.toString());
+            if (Files.isDirectory(p)) {
+              sb.append("/");
+            }
+            sb.append(Server.DELIMITER);
+          });
+    }
+    // remove extra : at the end
+    sb.delete(sb.length() - 1, sb.length());
+
+    out.write(sb.toString());
+    out.write(Server.EOT);
+    out.flush();
+  }
+
   static class ClientHandler implements Runnable {
 
     private final Socket socket;
+    private final Server server;
 
-    public ClientHandler(Socket socket) {
+    public ClientHandler(Socket socket, Server server) {
       this.socket = socket;
+      this.server = server;
     }
 
     @Override
@@ -75,35 +118,19 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
-        boolean result;
+        String buffer = in.readLine();
+        String[] tokens = buffer.split(" ");
 
-        do {
+        if (tokens.length == 0) {
+          System.err.println("no action!");
+        }
 
-          String[] args = in.readLine().split(" ");
-
-          if (args.length < 1) {
-            out.write("EINVAL\4");
-            out.flush();
-            return;
-          }
-
-          result = switch (args[0]) {
-            case "DELETE" -> {
-              if (args.length != 2) {
-                out.write("EINVAL\4");
-                yield false;
-              }
-
-              yield delete(args[1], out);
-            }
-            default -> {
-              out.write("ENOTSUP\4");
-              yield false;
-            }
-          };
-
-          out.flush();
-        } while (result);
+        try {
+          server.parseTokens(in, out, tokens);
+          System.out.println("");
+        } catch (IOException e) {
+          System.err.println("Got exception: " + e.getMessage());
+        }
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
       } catch (IOException e) {
