@@ -155,11 +155,12 @@ The client sends a put request to the server to upload a file or create a direct
 ==== Request
 
 ```txt
-PUT <PATH>
+PUT <PATH> <FILE_SIZE>
 ```
 
 The first part of the request provides the path to the file or directory on the
-server. A trailing `/` indicates that a directory should be created.
+server. A trailing `/` indicates that a directory should be created and no size
+should be included.
 
 ```bin
 <DATA>

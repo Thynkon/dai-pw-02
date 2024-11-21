@@ -63,21 +63,72 @@ public class ServerParser extends ConnectionParser {
     out.flush();
   }
 
+  private void put(Path path, int size) throws IOException {
+    File file = path.toFile();
+    System.out.println("expected size: " + size);
+
+    System.out.println("creating file");
+    if (!file.createNewFile()) {
+      sendError(Errno.EACCES); // TODO: use the correct error
+      return;
+    }
+    System.out.println("created file");
+
+    try (FileOutputStream fout = new FileOutputStream(file)) {
+      // Read the file in 4k blocks
+      byte[] buffer = new byte[4096];
+      int bytesRead;
+
+      System.out.println("starting to read");
+      while ((bytesRead = bin.read(buffer)) != -1 || size <= 0) {
+        fout.write(buffer, 0, bytesRead);
+        size -= bytesRead;
+        System.out.println("remaining size: " + size);
+      }
+      System.out.println("finished reading");
+
+      out.write("0" + Server.EOT);
+      out.flush();
+      System.out.println("Sent answer");
+    } catch (FileNotFoundException e) {
+      System.err.println("Cannot open file to write");
+      sendError(Errno.EACCES); // TODO: use the correct error
+      return;
+    }
+  }
+
+  private void mkdir(Path path) {
+    throw new RuntimeException("Not implemented");
+  }
+
   @Override
   public void parse(String[] tokens) throws IOException {
     super.parse(tokens);
 
+    System.out.println("Received " + Arrays.toString(tokens));
     switch (tokens[0]) {
       case "LIST" -> {
 
         if (tokens.length != 2) {
-          System.err.println("Invalid tokens: " + tokens);
+          System.err.println("Invalid tokens" + Arrays.toString(tokens));
           return;
         }
 
-        System.out.println("list got: " + Arrays.toString(tokens));
-
         list(Path.of(tokens[1]));
+      }
+      case "PUT" -> {
+        if (tokens.length == 2) {
+          mkdir(Path.of(tokens[1]));
+          return;
+        }
+
+        if (tokens.length == 3) {
+          put(Path.of(tokens[1]), Integer.valueOf(tokens[2]));
+          return;
+        }
+
+        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+
       }
       default -> sendError(Errno.ENOTSUP);
     }
