@@ -18,8 +18,6 @@ public class Client extends Service {
 
   @Override
   public void launch() {
-    System.out.println("[Client " + CLIENT_ID + "] starting with id " + CLIENT_ID);
-    System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
 
     try (Socket socket = new Socket(address, port);
         ClientParser parser = new ClientParser(socket.getInputStream(), socket.getOutputStream());) {
@@ -50,7 +48,8 @@ public class Client extends Service {
 
       sc.close();
     } catch (IOException e) {
-      System.out.println("[Client " + CLIENT_ID + "] exception: " + e);
+      System.out.println("[Client] exception: " + e);
     }
   }
+
 }

@@ -4,6 +4,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import ch.heigvd.dai.Errno;
@@ -63,6 +66,69 @@ public class ServerParser extends ConnectionParser {
     out.flush();
   }
 
+  /**
+   * Handles DELETE request and its given path.
+   * 
+   * @param path to delete
+   * @param out  The output where the result will be sent
+   * @throws IOException when unable to write to the socket output
+   */
+  private void delete(Path path) throws IOException {
+
+    Path full_path = workDir.resolve(path).normalize();
+    File file = full_path.toFile();
+
+    if (!file.exists()) {
+      out.write(String.valueOf(Errno.ENOENT) + Server.EOT);
+      out.flush();
+      return;
+    }
+
+    if (!file.getParentFile().canWrite()) {
+      out.write(String.valueOf(Errno.EACCES) + Server.EOT);
+      out.flush();
+      return;
+    }
+
+    if (file.isDirectory()) {
+      // Delete the directory content recursively
+      // @see https://www.baeldung.com/java-delete-directory#conclusion-1
+      try (Stream<Path> paths = Files.walk(full_path)) {
+        // Sort in reverse order to treat the deepest levels first
+        List<File> files = paths.sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .collect(Collectors.toList());
+
+        // Check if we can delete it all
+        if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
+          out.write(String.valueOf(Errno.EACCES) + Server.EOT);
+          out.flush();
+          return;
+        }
+
+        if (!files.stream().allMatch(File::delete)) {
+          // Should never happen but doesn't hurt to check
+          out.write(String.valueOf(Errno.EIO) + Server.EOT);
+          out.flush();
+          return;
+        }
+
+      } catch (IOException e) {
+        out.write(String.valueOf(Errno.EIO) + Server.EOT);
+        out.flush();
+        System.err.println("Unable to delete directory");
+        return;
+      }
+    } else {
+      file.delete();
+    }
+
+    out.write(String.valueOf(0) + Server.NEW_LINE);
+    out.flush();
+
+    return;
+  }
+
   private void put(Path path, int size) throws IOException {
     File file = path.toFile();
     System.out.println("expected size: " + size);
@@ -108,13 +174,24 @@ public class ServerParser extends ConnectionParser {
     System.out.println("Received " + Arrays.toString(tokens));
     switch (tokens[0]) {
       case "LIST" -> {
-
-        if (tokens.length != 2) {
-          System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        if (tokens.length == 2) {
+          list(Path.of(tokens[1]));
           return;
         }
 
-        list(Path.of(tokens[1]));
+        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        sendError(Errno.EINVAL);
+
+      }
+      case "DELETE" -> {
+        if (tokens.length == 2) {
+          delete(Path.of(tokens[1]));
+          return;
+        }
+
+        // TODO: replace with logging
+        System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+        sendError(Errno.EINVAL);
       }
       case "PUT" -> {
         if (tokens.length == 2) {
@@ -128,7 +205,7 @@ public class ServerParser extends ConnectionParser {
         }
 
         System.err.println("Invalid tokens" + Arrays.toString(tokens));
-
+        sendError(Errno.EINVAL);
       }
       default -> sendError(Errno.ENOTSUP);
     }

@@ -46,6 +46,21 @@ public class ClientParser extends ConnectionParser {
     });
   }
 
+  public void delete(String path) throws IOException {
+    out.write("DELETE " + path + Server.NEW_LINE);
+    out.flush();
+
+    int status = Character.getNumericValue(in.read());
+    // remove \n or EOT chars
+    in.read();
+    if (status != 0) {
+      System.err.println("Got error: " + Errno.getErrorMessage(status));
+      return;
+    }
+
+    System.out.println("Target deleted successfully");
+  }
+
   /**
    * Upload a file to the server
    */
@@ -130,6 +145,18 @@ public class ClientParser extends ConnectionParser {
 
         list(tokens[1]);
       }
+      case "DELETE", "rm", "delete" -> {
+
+        if (tokens.length != 2) {
+          System.err.println("Usage: " + tokens[0] + " <path>");
+
+          // TODO: replace with logging
+          System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+          return;
+        }
+
+        delete(tokens[1]);
+      }
       case "PUT", "put" -> {
         if (tokens.length != 3) {
           System.err.println("Usage: " + tokens[0] + " <local path> <remote path>");
@@ -159,6 +186,7 @@ public class ClientParser extends ConnectionParser {
         System.err.println(" LIST   List files and directories");
         System.err.println(" PUT    Upload a file");
         System.err.println(" MKDIR  Create a new directory on the server");
+        System.err.println(" DELETE Delete a file or directory on the server");
 
         // TODO: replace with logging
         System.err.println("Received invalid tokens to parse: " + Arrays.toString(tokens));
