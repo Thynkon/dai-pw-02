@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import ch.heigvd.dai.Errno;
+import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
 public class ClientParser extends ConnectionParser {
 
@@ -16,19 +17,51 @@ public class ClientParser extends ConnectionParser {
     super(bin, bout);
   }
 
-  private void list(String path) throws IOException {
-
-    out.write("LIST " + path + Server.NEW_LINE);
+  private void sendRequest(String command)
+      throws IOException {
+    out.write(command);
     out.flush();
 
-    int status = Character.getNumericValue(in.read());
+    in.mark(1);
+    if (in.read() == -1) {
+      throw new ServerHasGoneException();
+    }
+    in.reset();
+  }
+
+  private boolean parseStatus() throws IOException {
+    int byteRead;
+    StringBuilder buffer = new StringBuilder();
+
+    // status like ENOTDIR (20) are sent as two different chars/bytes: 2 (0x32) and
+    // then 0 (0x30)
+    while ((byteRead = in.read()) != -1) {
+      buffer.append((char) byteRead);
+
+      if (byteRead == Server.EOT) {
+        break;
+      }
+    }
+
+    int status = Integer.parseInt(buffer.toString().trim());
     if (status != 0) {
       System.err.println("Got error: " + Errno.getErrorMessage(status));
+
+      return false;
+    }
+
+    return true;
+  }
+
+  private void list(String path) throws IOException {
+    String command = "LIST " + path + Server.NEW_LINE;
+    sendRequest(command);
+
+    if (!parseStatus()) {
       return;
     }
 
     // remove \n or EOT chars
-    in.read();
     StringBuilder result = new StringBuilder();
 
     int byteRead;
@@ -123,7 +156,7 @@ public class ClientParser extends ConnectionParser {
   }
 
   @Override
-  public void parse(String[] tokens) throws IOException {
+  public void parse(String[] tokens) throws IOException, ServerHasGoneException {
     super.parse(tokens);
 
     switch (tokens[0]) {
@@ -181,13 +214,6 @@ public class ClientParser extends ConnectionParser {
         mkdir(tokens[1]);
       }
       default -> {
-        System.err.println("Invalid command");
-        System.err.println("Commands:");
-        System.err.println(" LIST   List files and directories");
-        System.err.println(" PUT    Upload a file");
-        System.err.println(" MKDIR  Create a new directory on the server");
-        System.err.println(" DELETE Delete a file or directory on the server");
-
         // TODO: replace with logging
         System.err.println("Received invalid tokens to parse: " + Arrays.toString(tokens));
       }

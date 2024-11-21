@@ -57,12 +57,8 @@ Thee protocol has three kinds of messages:
 
 The initial connection must be established by the client.
 
-Once the server accepts the connection, the client can sens `Actions` to interact
+Once the server accepts the connection, the client can send `Actions` to interact
 with files on the server.
-
-#task[
-  If there is enough time, add an authentication step in the connection process
-]
 
 When an `Action` is used to transfer a file from the server to the client, the
 server response should be a `Status` followed by the `Data` of the file if there
@@ -78,10 +74,6 @@ The client can do the following actions:
 - Store a file on the server
 - Delete a file from the server
 
-#task[
-  If there is enough time, add a move action
-]
-
 The `Status` values use the values defined by the c standard library in
 #link("https://man7.org/linux/man-pages/man3/errno.3.html")[errno.h] or `0` to
 indicate success.
@@ -93,7 +85,16 @@ sending `<CODE>\4` where `\4` is the `EOT` (End Of Transmission) character.
 
 == Section 3 - Messages
 
-=== List files
+Even though you will find in the examples bellow the name of the actions in uppercase, the server accepts them in any form (upper, lower, mix of both, etc...).
+
+The valid messages are:
+
+- LIST - List the contents of directories
+- GET - Downloads a file
+- PUT - Create a new file
+- DELETE - Delete a file
+
+=== LIST
 
 The client sends a list request to the server to show the list of files and
 folders at the specified path.
@@ -120,13 +121,19 @@ On a successful request, the server answers with the code `0`, followed by a
 colon separated list of files and folders. Each folders have a trailing `/`
 appended to them.
 
-On error, only the error code is sent. The code matches one of:
+On error, only the error code is sent. `<CODE>` matches one of:
 - EACCES
 - ENOENT
+- ENOTDIR
 
-=== Get file
+=== GET
 
 The client sends a get request to the server to download a file.
+
+#warning(title: "Downloading directories")[
+Notice that directories can not be downloaded. If you want to download the content of a directory, you first have 
+to list its contents to fetch the name of the files and then download them.
+]
 
 ==== Request
 
@@ -146,13 +153,13 @@ GET <PATH>
 On a successful request, the server answers with the code `0`, followed by the
 content of the file in binary form.
 
-On error, only the error code is sent. The code matches one of:
+On error, only the error code is sent. `<CODE>` matches one of:
 - EACCES
 - ENOENT
 - EISDIR
 
 
-=== Put file
+=== PUT
 
 The client sends a put request to the server to upload a file or create a directory.
 
@@ -182,13 +189,13 @@ content in binary.
 On a successful request, the server answers with the code `0` indicating that
 the file or directory was created successfully.
 
-On error, the code matches one of:
+On error, only the error code is sent. `<CODE>` matches one of:
 - EACCES
 - EFBIG
 - EISDIR
 - ENOENT
 
-=== Delete file
+=== DELETE
 
 The client sends a delete request to the server to delete a file.
 
@@ -211,32 +218,32 @@ If the path points to a directory, the whole directory is removed recursively.
 On a successful request, the server answers with the code `0` indicating that the
 file or folder was removed successfully.
 
-On error, the code matches one of:
+On error, only the error code is sent. `<CODE>` matches one of:
 - EACCES
 - ENOENT
 - EINVAL
 
 == Section 4 - Examples
 
-=== List
+=== LIST
 
 #align(center,[
   #image("./diagrams/list.svg" )
 ])
 
-=== Get
+=== GET
 
 #align(center,[
   #image("./diagrams/get.svg" )
 ])
 
-=== Put
+=== PUT
 
 #align(center,[
   #image("./diagrams/put.svg" )
 ])
 
-=== Delete
+=== DELETE
 
 #align(center,[
   #image("./diagrams/delete.svg" )

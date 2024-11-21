@@ -4,8 +4,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -72,22 +70,25 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
-        // TODO: handle closing differently by differenciating nice close and unexpected
-        // close
         String buffer;
-        while ((buffer = in.readLine()) != null) {
-
+        while ((buffer = in.readLine()) != null) { // Keep reading until the client closes the connection
           String[] tokens = buffer.split(" ");
 
           if (tokens.length == 0) {
             System.err.println("no action!");
+            continue; // Skip to the next request
+          }
+
+          if (buffer.toLowerCase().contains("exit")) {
+            break;
           }
 
           try {
             parser.parse(tokens);
+            out.flush(); // Ensure the response is sent immediately
             System.out.println("");
           } catch (IOException e) {
-            System.err.println("Got exception: " + e.getMessage());
+            System.err.println("Got exception while parsing tokens: " + e.getMessage());
           }
         }
 

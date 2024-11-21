@@ -32,34 +32,39 @@ public class ServerParser extends ConnectionParser {
 
   private void list(Path path) throws IOException {
     StringBuilder sb = new StringBuilder();
-    Path fullPath = workDir.resolve(path).normalize();
+    Path full_path = workDir.resolve(path).normalize();
 
-    if (!Files.exists(fullPath)) {
+    if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
       return;
-    }
-
-    if (!Files.isReadable(fullPath)) {
-      sendError(Errno.EACCES);
+    } else if (!Files.isDirectory(full_path)) {
+      sendError(Errno.ENOTDIR);
       return;
+    } else if (!Files.isReadable(full_path)) {
+      sendError(Errno.EACCES);
+    } else {
+      out.write(String.valueOf(0));
+      out.write(Server.EOT);
+      out.flush();
     }
 
-    out.write(String.valueOf(0));
-    out.write(Server.NEW_LINE);
-    out.flush();
-
-    try (Stream<Path> paths = Files.walk(workDir)) {
+    try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
       paths
           .forEach(p -> {
-            sb.append(p.toString());
+            sb.append(p.toString().replaceAll(full_path.toAbsolutePath().toString() + "/", ""));
             if (Files.isDirectory(p)) {
               sb.append("/");
             }
             sb.append(Server.DELIMITER);
           });
     }
-    // remove extra : at the end
-    sb.delete(sb.length() - 1, sb.length());
+
+    if (!sb.isEmpty()) {
+      // remove extra : at the end
+      sb.delete(sb.length() - 1, sb.length());
+    } else {
+      sb.append("Directory is empty!");
+    }
 
     out.write(sb.toString());
     out.write(Server.EOT);
@@ -170,10 +175,11 @@ public class ServerParser extends ConnectionParser {
   @Override
   public void parse(String[] tokens) throws IOException {
     super.parse(tokens);
+    Server.Action action = Server.Action.fromString(tokens[0]);
 
     System.out.println("Received " + Arrays.toString(tokens));
-    switch (tokens[0]) {
-      case "LIST" -> {
+    switch (action) {
+      case Server.Action.LIST -> {
         if (tokens.length == 2) {
           list(Path.of(tokens[1]));
           return;
@@ -183,7 +189,7 @@ public class ServerParser extends ConnectionParser {
         sendError(Errno.EINVAL);
 
       }
-      case "DELETE" -> {
+      case Server.Action.DELETE -> {
         if (tokens.length == 2) {
           delete(Path.of(tokens[1]));
           return;
@@ -193,7 +199,7 @@ public class ServerParser extends ConnectionParser {
         System.err.println("Invalid tokens: " + Arrays.toString(tokens));
         sendError(Errno.EINVAL);
       }
-      case "PUT" -> {
+      case Server.Action.PUT -> {
         if (tokens.length == 2) {
           mkdir(Path.of(tokens[1]));
           return;
