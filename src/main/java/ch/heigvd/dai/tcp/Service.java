@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import ch.heigvd.dai.exceptions.ServerHasGoneException;
-
 public abstract class Service {
   protected int port;
   protected String address;
@@ -38,11 +36,11 @@ public abstract class Service {
 
   abstract public void launch();
 
-  abstract public void list(BufferedReader in, BufferedWriter out, Path path)
-      throws IOException;
+  abstract public void delete(BufferedReader in, BufferedWriter out, Path path) throws IOException;
 
-  protected void parseList(BufferedReader in, BufferedWriter out, String[] tokens)
-      throws IOException, ServerHasGoneException {
+  abstract public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException;
+
+  protected void parseList(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
     if (tokens.length != 2) {
       System.err.println("Wrong amount of arguments.\n Take a look at the spec!");
       return;
@@ -51,13 +49,24 @@ public abstract class Service {
     list(in, out, Paths.get(tokens[1]));
   }
 
-  protected void parseTokens(BufferedReader in, BufferedWriter out, String[] tokens)
-      throws IOException, IllegalArgumentException {
+  protected void parseDelete(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
+    if (tokens.length != 2) {
+      System.err.println("Wrong amount of arguments.\n Take a look at the spec!");
+      return;
+    }
+
+    delete(in, out, Path.of(tokens[1]));
+  }
+
+  protected void parseTokens(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
     Action action = Action.fromString(tokens[0]);
 
     switch (action) {
       case LIST:
         parseList(in, out, tokens);
+        break;
+      case DELETE:
+        parseDelete(in, out, tokens);
         break;
 
       default:

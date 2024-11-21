@@ -79,7 +79,6 @@ public class Client extends Service {
     }
 
     // remove \n or EOT chars
-    // in.read();
     StringBuilder result = new StringBuilder();
 
     int byteRead;
@@ -96,6 +95,21 @@ public class Client extends Service {
       System.out.println(s);
     });
 
+  }
+
+  public void delete(BufferedReader in, BufferedWriter out, Path path) throws IOException {
+    out.write("DELETE " + path + Server.NEW_LINE);
+    out.flush();
+
+    int status = Character.getNumericValue(in.read());
+    // remove \n or EOT chars
+    in.read();
+    if (status != 0) {
+      System.err.println("Got error: " + Errno.getErrorMessage(status));
+      return;
+    }
+
+    System.out.println("Target deleted successfully");
   }
 
   @Override
@@ -154,8 +168,9 @@ public class Client extends Service {
         }
       }
       System.out.println("[Client] Closing connection and quitting...");
-    } catch (Exception e) {
-      System.out.println("[Client] Exception: " + e);
+    } catch (IOException e) {
+      System.out.println("[Client] exception: " + e);
     }
   }
+
 }

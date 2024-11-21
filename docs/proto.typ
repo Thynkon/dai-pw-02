@@ -74,10 +74,14 @@ The client can do the following actions:
 - Store a file on the server
 - Delete a file from the server
 
-The `Status` values use the values defined by the c standard library in #link("https://man7.org/linux/man-pages/man3/errno.3.html")[errno.h]
+The `Status` values use the values defined by the c standard library in
+#link("https://man7.org/linux/man-pages/man3/errno.3.html")[errno.h] or `0` to
+indicate success.
 
-When an invalid message is received, the server should answer with `ENOTSUP` and
-flush its buffer.
+When an invalid message is received, the server should answer with `ENOTSUP`.
+
+When the status represents an error, the server terminates the connection by
+sending `<CODE>\4` where `\4` is the `EOT` (End Of Transmission) character.
 
 == Section 3 - Messages
 
@@ -216,6 +220,7 @@ file or folder was removed successfully.
 On error, only the error code is sent. `<CODE>` matches one of:
 - EACCES
 - ENOENT
+- EINVAL
 
 == Section 4 - Examples
 
