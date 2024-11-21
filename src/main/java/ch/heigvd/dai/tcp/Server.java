@@ -2,6 +2,7 @@ package ch.heigvd.dai.tcp;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -12,8 +13,11 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import ch.heigvd.dai.Errno;
@@ -91,6 +95,69 @@ public class Server extends Service {
     out.write(sb.toString());
     out.write(Server.EOT);
     out.flush();
+  }
+
+  /**
+   * Handles DELETE request and its given path.
+   * 
+   * @param path to delete
+   * @param out  The output where the result will be sent
+   * @throws IOException when unable to write to the socket output
+   */
+  public void delete(BufferedReader in, BufferedWriter out, Path path) throws IOException {
+
+    Path full_path = work_dir.resolve(path).normalize();
+    File file = full_path.toFile();
+
+    if (!file.exists()) {
+      out.write(String.valueOf(Errno.ENOENT) + EOT);
+      out.flush();
+      return;
+    }
+
+    if (!file.getParentFile().canWrite()) {
+      out.write(String.valueOf(Errno.EACCES) + EOT);
+      out.flush();
+      return;
+    }
+
+    if (file.isDirectory()) {
+      // Delete the directory content recursively
+      // @see https://www.baeldung.com/java-delete-directory#conclusion-1
+      try (Stream<Path> paths = Files.walk(full_path)) {
+        // Sort in reverse order to treat the deepest levels first
+        List<File> files = paths.sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .collect(Collectors.toList());
+
+        // Check if we can delete it all
+        if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
+          out.write(String.valueOf(Errno.EACCES) + EOT);
+          out.flush();
+          return;
+        }
+
+        if (!files.stream().allMatch(File::delete)) {
+          // Should never happen but doesn't hurt to check
+          out.write(String.valueOf(Errno.EIO) + EOT);
+          out.flush();
+          return;
+        }
+
+      } catch (IOException e) {
+        out.write(String.valueOf(Errno.EIO) + EOT);
+        out.flush();
+        System.err.println("Unable to delete directory");
+        return;
+      }
+    } else {
+      file.delete();
+    }
+
+    out.write(String.valueOf(0) + Server.NEW_LINE);
+    out.flush();
+
+    return;
   }
 
   static class ClientHandler implements Runnable {
