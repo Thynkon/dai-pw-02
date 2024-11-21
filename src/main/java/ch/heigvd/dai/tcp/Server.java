@@ -65,11 +65,9 @@ public class Server extends Service {
     Path full_path = work_dir.resolve(path).normalize();
 
     if (!Files.exists(full_path)) {
-      System.out.println("sending enoent");
       sendError(out, Errno.ENOENT);
       return;
     } else if (!Files.isDirectory(full_path)) {
-      System.out.println("sending ENOTDIR");
       sendError(out, Errno.ENOTDIR);
       return;
     } else if (!Files.isReadable(full_path)) {
@@ -80,18 +78,23 @@ public class Server extends Service {
       out.flush();
     }
 
-    try (Stream<Path> paths = Files.walk(work_dir)) {
+    try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
       paths
           .forEach(p -> {
-            sb.append(p.toString());
+            sb.append(p.toString().replaceAll(full_path.toAbsolutePath().toString() + "/", ""));
             if (Files.isDirectory(p)) {
               sb.append("/");
             }
             sb.append(Server.DELIMITER);
           });
     }
-    // remove extra : at the end
-    sb.delete(sb.length() - 1, sb.length());
+
+    if (!sb.isEmpty()) {
+      // remove extra : at the end
+      sb.delete(sb.length() - 1, sb.length());
+    } else {
+      sb.append("Directory is empty!");
+    }
 
     out.write(sb.toString());
     out.write(Server.EOT);

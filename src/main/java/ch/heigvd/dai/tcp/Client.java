@@ -79,7 +79,7 @@ public class Client extends Service {
     }
 
     // remove \n or EOT chars
-    in.read();
+    // in.read();
     StringBuilder result = new StringBuilder();
 
     int byteRead;
