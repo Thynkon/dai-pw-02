@@ -67,7 +67,7 @@ public class Client extends Service {
       return;
     }
 
-    // TODO: process result ?
+    System.out.println("Target deleted successfully");
   }
 
   @Override
