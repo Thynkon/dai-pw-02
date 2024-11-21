@@ -111,11 +111,13 @@ public class Server extends Service {
 
     if (!file.exists()) {
       out.write(String.valueOf(Errno.ENOENT) + EOT);
+      out.flush();
       return;
     }
 
     if (!file.getParentFile().canWrite()) {
       out.write(String.valueOf(Errno.EACCES) + EOT);
+      out.flush();
       return;
     }
 
@@ -131,17 +133,20 @@ public class Server extends Service {
         // Check if we can delete it all
         if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
           out.write(String.valueOf(Errno.EACCES) + EOT);
+          out.flush();
           return;
         }
 
         if (!files.stream().allMatch(File::delete)) {
           // Should never happen but doesn't hurt to check
           out.write(String.valueOf(Errno.EIO) + EOT);
+          out.flush();
           return;
         }
 
       } catch (IOException e) {
         out.write(String.valueOf(Errno.EIO) + EOT);
+        out.flush();
         System.err.println("Unable to delete directory");
         return;
       }
@@ -150,6 +155,7 @@ public class Server extends Service {
     }
 
     out.write(String.valueOf(0) + Server.NEW_LINE);
+    out.flush();
 
     return;
   }
