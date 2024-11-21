@@ -1,17 +1,8 @@
 package ch.heigvd.dai.tcp;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Scanner;
-
-import ch.heigvd.dai.Errno;
 
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
@@ -25,46 +16,13 @@ public class Client extends Service {
     this.port = port;
   }
 
-  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
-    out.write("LIST " + path + Server.NEW_LINE);
-    out.flush();
-
-    int status = Character.getNumericValue(in.read());
-    if (status != 0) {
-      System.err.println("Got error: " + Errno.getErrorMessage(status));
-      return;
-    }
-
-    // remove \n or EOT chars
-    in.read();
-    StringBuilder result = new StringBuilder();
-
-    int byteRead;
-    while ((byteRead = in.read()) != -1) {
-      char c = (char) byteRead;
-      if (c == Server.EOT) {
-        break;
-      }
-      result.append(c);
-    }
-
-    System.out.println("Got result: ");
-    Arrays.stream(result.toString().split(Server.DELIMITER)).forEach(s -> {
-      System.out.println(s);
-    });
-
-  }
-
   @Override
   public void launch() {
     System.out.println("[Client " + CLIENT_ID + "] starting with id " + CLIENT_ID);
     System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
 
     try (Socket socket = new Socket(address, port);
-        BufferedReader in = new BufferedReader(
-            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-        BufferedWriter out = new BufferedWriter(
-            new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));) {
+        ClientParser parser = new ClientParser(socket.getInputStream(), socket.getOutputStream());) {
       System.out.println("[Client " + CLIENT_ID + "] connected to " + address + ":" + port);
 
       Scanner sc = new Scanner(System.in);
@@ -82,7 +40,7 @@ public class Client extends Service {
         }
 
         try {
-          parseTokens(in, out, tokens);
+          parser.parse(tokens);
           System.out.println("");
         } catch (IOException e) {
           System.err.println("Got exception: " + e.getMessage());

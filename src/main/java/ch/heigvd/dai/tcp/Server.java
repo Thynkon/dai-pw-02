@@ -1,22 +1,11 @@
 package ch.heigvd.dai.tcp;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
-
-import ch.heigvd.dai.Errno;
 
 public class Server extends Service {
   private static final int SERVER_ID = (int) (Math.random() * 1000000);
@@ -54,45 +43,6 @@ public class Server extends Service {
     }
   }
 
-  private void sendError(BufferedWriter out, int errno) throws IOException {
-    out.write(String.valueOf(errno));
-    out.write(Server.EOT);
-    out.flush();
-  }
-
-  public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException {
-    StringBuilder sb = new StringBuilder();
-    Path full_path = work_dir.resolve(path).normalize();
-
-    if (!Files.exists(full_path)) {
-      sendError(out, Errno.ENOENT);
-      return;
-    } else if (!Files.isReadable(full_path)) {
-      sendError(out, Errno.EACCES);
-    } else {
-      out.write(String.valueOf(0));
-      out.write(Server.NEW_LINE);
-      out.flush();
-    }
-
-    try (Stream<Path> paths = Files.walk(work_dir)) {
-      paths
-          .forEach(p -> {
-            sb.append(p.toString());
-            if (Files.isDirectory(p)) {
-              sb.append("/");
-            }
-            sb.append(Server.DELIMITER);
-          });
-    }
-    // remove extra : at the end
-    sb.delete(sb.length() - 1, sb.length());
-
-    out.write(sb.toString());
-    out.write(Server.EOT);
-    out.flush();
-  }
-
   static class ClientHandler implements Runnable {
 
     private final Socket socket;
@@ -109,7 +59,9 @@ public class Server extends Service {
           BufferedReader in = new BufferedReader(
               new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
           BufferedWriter out = new BufferedWriter(
-              new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+              new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+          ServerParser parser = new ServerParser(in, out, socket.getInputStream(), socket.getOutputStream(),
+              server.work_dir);) {
         System.out.println(
             "[Server "
                 + SERVER_ID
@@ -118,18 +70,23 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
-        String buffer = in.readLine();
-        String[] tokens = buffer.split(" ");
+        // TODO: handle closing differently by differenciating nice close and unexpected
+        // close
+        String buffer;
+        while ((buffer = in.readLine()) != null) {
 
-        if (tokens.length == 0) {
-          System.err.println("no action!");
-        }
+          String[] tokens = buffer.split(" ");
 
-        try {
-          server.parseTokens(in, out, tokens);
-          System.out.println("");
-        } catch (IOException e) {
-          System.err.println("Got exception: " + e.getMessage());
+          if (tokens.length == 0) {
+            System.err.println("no action!");
+          }
+
+          try {
+            parser.parse(tokens);
+            System.out.println("");
+          } catch (IOException e) {
+            System.err.println("Got exception: " + e.getMessage());
+          }
         }
 
         System.out.println("[Server " + SERVER_ID + "] closing connection");
