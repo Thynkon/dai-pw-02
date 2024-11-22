@@ -1,6 +1,8 @@
 package ch.heigvd.dai.tcp;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -14,18 +16,18 @@ import ch.heigvd.dai.Errno;
 public class ServerParser extends ConnectionParser {
   public final Path workDir;
 
-  public ServerParser(BufferedReader in, BufferedWriter out, InputStream bin, OutputStream bout, Path workDir) {
-    super(in, out, bin, bout);
+  public ServerParser(DataInputStream in, DataOutputStream out, Path workDir) {
+    super(in, out);
     this.workDir = workDir;
   }
 
-  public ServerParser(InputStream bin, OutputStream bout, Path workDir) {
-    super(bin, bout);
+  public ServerParser(InputStream in, OutputStream out, Path workDir) {
+    super(in, out);
     this.workDir = workDir;
   }
 
   private void sendError(int errno) throws IOException {
-    out.write(String.valueOf(errno));
+    out.writeChars(String.valueOf(errno));
     out.write(Server.EOT);
     out.flush();
   }
@@ -43,7 +45,7 @@ public class ServerParser extends ConnectionParser {
     } else if (!Files.isReadable(full_path)) {
       sendError(Errno.EACCES);
     } else {
-      out.write(String.valueOf(0));
+      out.writeChars(String.valueOf(0));
       out.write(Server.EOT);
       out.flush();
     }
@@ -66,7 +68,7 @@ public class ServerParser extends ConnectionParser {
       sb.append("Directory is empty!");
     }
 
-    out.write(sb.toString());
+    out.writeChars(sb.toString());
     out.write(Server.EOT);
     out.flush();
   }
@@ -84,13 +86,13 @@ public class ServerParser extends ConnectionParser {
     File file = full_path.toFile();
 
     if (!file.exists()) {
-      out.write(String.valueOf(Errno.ENOENT) + Server.EOT);
+      out.writeChars(String.valueOf(Errno.ENOENT) + Server.EOT);
       out.flush();
       return;
     }
 
     if (!file.getParentFile().canWrite()) {
-      out.write(String.valueOf(Errno.EACCES) + Server.EOT);
+      out.writeChars(String.valueOf(Errno.EACCES) + Server.EOT);
       out.flush();
       return;
     }
@@ -106,20 +108,20 @@ public class ServerParser extends ConnectionParser {
 
         // Check if we can delete it all
         if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
-          out.write(String.valueOf(Errno.EACCES) + Server.EOT);
+          out.writeChars(String.valueOf(Errno.EACCES) + Server.EOT);
           out.flush();
           return;
         }
 
         if (!files.stream().allMatch(File::delete)) {
           // Should never happen but doesn't hurt to check
-          out.write(String.valueOf(Errno.EIO) + Server.EOT);
+          out.writeChars(String.valueOf(Errno.EIO) + Server.EOT);
           out.flush();
           return;
         }
 
       } catch (IOException e) {
-        out.write(String.valueOf(Errno.EIO) + Server.EOT);
+        out.writeChars(String.valueOf(Errno.EIO) + Server.EOT);
         out.flush();
         System.err.println("Unable to delete directory");
         return;
@@ -128,14 +130,17 @@ public class ServerParser extends ConnectionParser {
       file.delete();
     }
 
-    out.write(String.valueOf(0) + Server.NEW_LINE);
+    out.writeChars(String.valueOf(0));
+    out.write(Server.EOT);
     out.flush();
 
     return;
   }
 
   private void put(Path path, int size) throws IOException {
-    File file = path.toFile();
+
+    Path full_path = workDir.resolve(path).normalize();
+    File file = full_path.toFile();
     System.out.println("expected size: " + size);
 
     System.out.println("creating file");
@@ -150,17 +155,23 @@ public class ServerParser extends ConnectionParser {
       byte[] buffer = new byte[4096];
       int bytesRead;
 
+      System.out.println("in.available(): " + in.available());
+
       System.out.println("starting to read");
-      while ((bytesRead = bin.read(buffer)) != -1 || size <= 0) {
+      while (size > 0 && (bytesRead = in.read(buffer)) != -1) {
         fout.write(buffer, 0, bytesRead);
         size -= bytesRead;
+        // System.out.println("buffer: " + new String(buffer, StandardCharsets.UTF_8));
         System.out.println("remaining size: " + size);
       }
       System.out.println("finished reading");
 
-      out.write("0" + Server.EOT);
+      out.writeChars("0");
+      out.write(Server.EOT);
       out.flush();
       System.out.println("Sent answer");
+      fout.flush();
+
     } catch (FileNotFoundException e) {
       System.err.println("Cannot open file to write");
       sendError(Errno.EACCES); // TODO: use the correct error

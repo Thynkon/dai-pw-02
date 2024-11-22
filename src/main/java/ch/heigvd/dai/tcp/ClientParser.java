@@ -9,24 +9,25 @@ import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
 public class ClientParser extends ConnectionParser {
 
-  public ClientParser(BufferedReader in, BufferedWriter out, InputStream bin, OutputStream bout) {
-    super(in, out, bin, bout);
+  public ClientParser(DataInputStream in, DataOutputStream out) {
+    super(in, out);
   }
 
-  public ClientParser(InputStream bin, OutputStream bout) {
-    super(bin, bout);
+  public ClientParser(InputStream in, OutputStream out) {
+    super(in, out);
   }
 
   private void sendRequest(String command)
       throws IOException {
-    out.write(command);
+    out.writeChars(command);
     out.flush();
 
-    in.mark(1);
-    if (in.read() == -1) {
-      throw new ServerHasGoneException();
-    }
-    in.reset();
+    // FIXME: following code doesn't work with DataInputStream
+    // in.mark(1);
+    // if (in.read() == -1) {
+    // throw new ServerHasGoneException();
+    // }
+    // in.reset();
   }
 
   private boolean parseStatus() throws IOException {
@@ -61,7 +62,6 @@ public class ClientParser extends ConnectionParser {
       return;
     }
 
-    // remove \n or EOT chars
     StringBuilder result = new StringBuilder();
 
     int byteRead;
@@ -80,14 +80,10 @@ public class ClientParser extends ConnectionParser {
   }
 
   public void delete(String path) throws IOException {
-    out.write("DELETE " + path + Server.NEW_LINE);
-    out.flush();
+    String command = "DELETE " + path + Server.NEW_LINE;
+    sendRequest(command);
 
-    int status = Character.getNumericValue(in.read());
-    // remove \n or EOT chars
-    in.read();
-    if (status != 0) {
-      System.err.println("Got error: " + Errno.getErrorMessage(status));
+    if (!parseStatus()) {
       return;
     }
 
@@ -116,17 +112,16 @@ public class ClientParser extends ConnectionParser {
 
     try (FileInputStream fin = new FileInputStream(file);) {
       System.out.println("Sending file");
-      out.write("PUT " + remotePath + " " + file.length() + "\n");
-      out.flush();
+      sendRequest("PUT " + remotePath + " " + file.length() + "\n");
 
       // read the file using 4K blocks
       byte[] buffer = new byte[4096];
       int bytesRead;
 
       while ((bytesRead = fin.read(buffer)) != -1) {
-        bout.write(buffer, 0, bytesRead);
+        out.write(buffer, 0, bytesRead);
       }
-      bout.flush();
+      out.flush();
       System.out.println("file sent");
     } catch (FileNotFoundException e) {
       System.err.println("Unable to open file");
@@ -135,13 +130,7 @@ public class ClientParser extends ConnectionParser {
     // Check if the server reveived correctly
 
     System.out.println("waiting for answer");
-    // TODO: Check more than the first character. Might want to switch to \n instead
-    // of EOT since readLine would work as expected
-    int status = Character.getNumericValue(in.read());
-    // remove \n or EOT chars
-    in.read();
-    if (status != 0) {
-      System.err.println("Got error: " + Errno.getErrorMessage(status));
+    if (!parseStatus()) {
       return;
     }
 

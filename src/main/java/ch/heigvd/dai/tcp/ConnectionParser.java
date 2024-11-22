@@ -3,25 +3,19 @@ package ch.heigvd.dai.tcp;
 import java.io.*;
 
 public abstract class ConnectionParser implements AutoCloseable {
-  protected InputStream bin;
-  protected BufferedReader in;
-  protected OutputStream bout;
-  /**
-   * Text output
-   */
-  protected BufferedWriter out;
-  private boolean ownsBuf;
+  protected DataInputStream in;
+  protected DataOutputStream out;
+  boolean ownsData;
 
-  public ConnectionParser(BufferedReader in, BufferedWriter out, InputStream bin, OutputStream bout) {
+  public ConnectionParser(DataInputStream in, DataOutputStream out) {
     this.in = in;
     this.out = out;
-    this.bin = bin;
-    this.bout = bout;
   }
 
-  public ConnectionParser(InputStream bin, OutputStream bout) {
-    this(new BufferedReader(new InputStreamReader(bin)), new BufferedWriter(new OutputStreamWriter(bout)), bin, bout);
-    ownsBuf = true;
+  public ConnectionParser(InputStream in, OutputStream out) {
+    this.in = new DataInputStream(in);
+    this.out = new DataOutputStream(out);
+    this.ownsData = true;
   }
 
   public void parse(String[] tokens) throws IOException {
@@ -32,11 +26,10 @@ public abstract class ConnectionParser implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    if (ownsBuf) {
+    if (ownsData) {
       in.close();
       out.close();
     }
-
   }
 
 }

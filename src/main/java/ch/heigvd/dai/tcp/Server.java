@@ -56,12 +56,10 @@ public class Server extends Service {
     @Override
     public void run() {
       try (socket; // This allow to use try-with-resources with the socket
-          BufferedReader in = new BufferedReader(
-              new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-          BufferedWriter out = new BufferedWriter(
-              new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-          ServerParser parser = new ServerParser(in, out, socket.getInputStream(), socket.getOutputStream(),
-              server.work_dir);) {
+          DataInputStream in = new DataInputStream(socket.getInputStream());
+          DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+          ServerParser parser = new ServerParser(in, out, server.work_dir);) {
+
         System.out.println(
             "[Server "
                 + SERVER_ID
@@ -71,7 +69,15 @@ public class Server extends Service {
                 + socket.getPort());
 
         String buffer;
-        while ((buffer = in.readLine()) != null) { // Keep reading until the client closes the connection
+        StringBuilder sb = new StringBuilder();
+        char c;
+        while ((c = in.readChar()) != -1) { // Keep reading until the client closes the connection
+          if (c != '\n' && c != Server.EOT) {
+            sb.append(c);
+            continue;
+          }
+          buffer = sb.toString();
+          sb.setLength(0);
           String[] tokens = buffer.split(" ");
 
           if (tokens.length == 0) {
