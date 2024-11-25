@@ -133,6 +133,9 @@ Finally, launch the publish workflow (which publishes the mvn package to Github 
 act --secret-file .secrets
 ```
 
+
+The workflows automatically publish this project to the GitHub's `mvn` and `Docker` registries.
+
 ### Development
 
 Use the maven wrapper to install dependencies, build and package the project.
@@ -172,9 +175,6 @@ SimpFT can be run directly using java or through a docker container.
 
 The same image can be used for the server and client.
 
-> ![TODO]
-> Publish to GitHub Container Registry
-
 ##### Building the image
 
 You can build the container by cloning the repository and using:
@@ -213,7 +213,7 @@ You can run the server either manually using
 ```bash
 docker run --rm           \
   -p 127.0.0.1:1234:1234  \
-  -v "./server_data:/data"\
+  -v "./server-data:/data"\
   dai-lab-02:latest       \
   --mode server           \
   --address 0.0.0.0       \
@@ -224,7 +224,7 @@ docker run --rm           \
 Or with the [compose.yml][compose]
 
 ```bash
-docker compose up -d
+docker compose run server
 ```
 
 ###### Client
@@ -232,7 +232,13 @@ docker compose up -d
 When using the client, you should run the container manually.
 
 ```bash
-docker run --rm -v "./client_data:/data" dai-lab-02:latest --mode client -a <server-address>
+docker run --rm -v "./client-data:/data" dai-lab-02:latest --mode client -a <server-address>
+```
+
+Or with the [compose.yml][compose]
+
+```bash
+docker compose run client
 ```
 
 <!-- CONTRIBUTING -->
