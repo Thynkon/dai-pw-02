@@ -224,7 +224,13 @@ docker run --rm           \
 Or with the [compose.yml][compose]
 
 ```bash
-docker compose run server
+docker compose up server
+```
+
+And watch the container's logs:
+
+```bash
+docker compose logs -f server
 ```
 
 ###### Client

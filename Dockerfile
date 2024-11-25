@@ -21,3 +21,5 @@ COPY --from=builder /app/target/simpft-1.0.jar /app/app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 CMD ["--help"]
+
+VOLUME [ "/data" ]
