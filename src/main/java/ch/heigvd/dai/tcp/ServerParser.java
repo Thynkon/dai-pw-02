@@ -1,8 +1,6 @@
 package ch.heigvd.dai.tcp;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -16,22 +14,47 @@ import ch.heigvd.dai.Errno;
 public class ServerParser extends ConnectionParser {
   public final Path workDir;
 
+  /**
+   * @brief ServerParser constructor where the streams are owned by the caller
+   *
+   * @note The goal is to share the same buffer, the streams should only be
+   *       accessed through the DataInputStream and DataOutputStream in order to
+   *       ensure that no other buffer consumes from the streams.
+   * 
+   * @param in      The input stream
+   * @param out     The output stream
+   * @param workDir The working directory of the server
+   */
   public ServerParser(DataInputStream in, DataOutputStream out, Path workDir) {
     super(in, out);
     this.workDir = workDir;
   }
 
+  /**
+   * @brief ServerParser constructor where the streams are owned by the parser
+   * 
+   * @param in      The input stream
+   * @param out     The output stream
+   * @param workDir The working directory of the server
+   */
   public ServerParser(InputStream in, OutputStream out, Path workDir) {
     super(in, out);
     this.workDir = workDir;
   }
 
+  /**
+   * @brief Send an error and flush the buffer
+   * @param errno the error number from {@link Errno}
+   */
   private void sendError(int errno) throws IOException {
-    out.writeChars(String.valueOf(errno));
-    out.write(Server.EOT);
+    out.writeUTF(String.valueOf(errno) + String.valueOf((char) Server.EOT));
     out.flush();
   }
 
+  /**
+   * @brief Answer with the list items contained in the target path
+   * @param path the path given by the client
+   */
   private void list(Path path) throws IOException {
     StringBuilder sb = new StringBuilder();
     Path full_path = workDir.resolve(path).normalize();
@@ -39,16 +62,19 @@ public class ServerParser extends ConnectionParser {
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
       return;
-    } else if (!Files.isDirectory(full_path)) {
+    }
+
+    if (!Files.isDirectory(full_path)) {
       sendError(Errno.ENOTDIR);
       return;
-    } else if (!Files.isReadable(full_path)) {
-      sendError(Errno.EACCES);
-    } else {
-      out.writeChars(String.valueOf(0));
-      out.write(Server.EOT);
-      out.flush();
     }
+
+    if (!Files.isReadable(full_path)) {
+      sendError(Errno.EACCES);
+    }
+
+    out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
+    out.flush();
 
     try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
       paths
@@ -68,8 +94,7 @@ public class ServerParser extends ConnectionParser {
       sb.append("Directory is empty!");
     }
 
-    out.writeChars(sb.toString());
-    out.write(Server.EOT);
+    out.writeUTF(sb.toString() + String.valueOf((char) Server.EOT));
     out.flush();
   }
 
@@ -86,14 +111,12 @@ public class ServerParser extends ConnectionParser {
     File file = full_path.toFile();
 
     if (!file.exists()) {
-      out.writeChars(String.valueOf(Errno.ENOENT) + Server.EOT);
-      out.flush();
+      sendError(Errno.ENOENT);
       return;
     }
 
     if (!file.getParentFile().canWrite()) {
-      out.writeChars(String.valueOf(Errno.EACCES) + Server.EOT);
-      out.flush();
+      sendError(Errno.EACCES);
       return;
     }
 
@@ -108,21 +131,18 @@ public class ServerParser extends ConnectionParser {
 
         // Check if we can delete it all
         if (!files.stream().allMatch((f) -> f.getParentFile().canWrite())) {
-          out.writeChars(String.valueOf(Errno.EACCES) + Server.EOT);
-          out.flush();
+          sendError(Errno.EACCES);
           return;
         }
 
         if (!files.stream().allMatch(File::delete)) {
           // Should never happen but doesn't hurt to check
-          out.writeChars(String.valueOf(Errno.EIO) + Server.EOT);
-          out.flush();
+          sendError(Errno.EIO);
           return;
         }
 
       } catch (IOException e) {
-        out.writeChars(String.valueOf(Errno.EIO) + Server.EOT);
-        out.flush();
+        sendError(Errno.EIO);
         System.err.println("Unable to delete directory");
         return;
       }
@@ -130,11 +150,8 @@ public class ServerParser extends ConnectionParser {
       file.delete();
     }
 
-    out.writeChars(String.valueOf(0));
-    out.write(Server.EOT);
+    out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
     out.flush();
-
-    return;
   }
 
   private void put(Path path, int size) throws IOException {
@@ -166,15 +183,15 @@ public class ServerParser extends ConnectionParser {
       }
       System.out.println("finished reading");
 
-      out.writeChars("0");
-      out.write(Server.EOT);
+      out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
       out.flush();
       System.out.println("Sent answer");
       fout.flush();
 
     } catch (FileNotFoundException e) {
+      // Shouldn't ever happen
       System.err.println("Cannot open file to write");
-      sendError(Errno.EACCES); // TODO: use the correct error
+      sendError(Errno.ENOENT);
       return;
     }
   }

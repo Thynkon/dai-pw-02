@@ -70,9 +70,9 @@ public class Server extends Service {
 
         String buffer;
         StringBuilder sb = new StringBuilder();
-        char c;
-        while ((c = in.readChar()) != -1) { // Keep reading until the client closes the connection
-          if (c != '\n' && c != Server.EOT) {
+        String c; // UTF8 char
+        while ((c = in.readUTF()) != null) { // Keep reading until the client closes the connection
+          if (!(c.equals(String.valueOf('\n')) || c.equals(String.valueOf((char) Server.EOT)))) {
             sb.append(c);
             continue;
           }
