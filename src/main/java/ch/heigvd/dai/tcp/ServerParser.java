@@ -163,6 +163,12 @@ public class ServerParser extends ConnectionParser {
     System.out.println("creating file");
     if (!file.createNewFile()) {
       sendError(Errno.EACCES); // TODO: use the correct error
+
+      // TODO: check if the implementation matches the protocol and fix whichever is
+      // simpler to fix
+
+      // skip the file content
+      in.skipBytes(size);
       return;
     }
     System.out.println("created file");
