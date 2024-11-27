@@ -43,3 +43,6 @@ Thumbs.db
 .classpath
 .settings
 .project
+.secrets
+client-data/
+server-data/
