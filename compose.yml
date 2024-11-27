@@ -19,6 +19,3 @@ services:
     command: "--mode client --address server --work-dir /data"
     stdin_open: true
     tty: true # Allocate a pseudo-TTY for debug purposes
-
-volumes:
-  data:
