@@ -70,12 +70,13 @@ public class Server extends Service {
 
         String buffer;
         StringBuilder sb = new StringBuilder();
-        String c; // UTF8 char
-        while ((c = in.readUTF()) != null) { // Keep reading until the client closes the connection
-          if (!(c.equals(String.valueOf('\n')) || c.equals(String.valueOf((char) Server.EOT)))) {
-            sb.append(c);
+        int c;
+        while ((c = in.read()) != -1) { // Keep reading until the client closes the connection
+          if (!(c == (int) '\n' || c == Server.EOT)) {
+            sb.append((char) c);
             continue;
           }
+          System.out.println("Server.ClientHandler.run(), in.available() = " + in.available());
           buffer = sb.toString();
           sb.setLength(0);
           String[] tokens = buffer.split(" ");
@@ -84,6 +85,9 @@ public class Server extends Service {
             System.err.println("no action!");
             continue; // Skip to the next request
           }
+
+          System.out
+              .println("Server.ClientHandler.run(), tokens[0] = '" + tokens[0] + "', length: " + tokens[0].length());
 
           if (buffer.toLowerCase().contains("exit")) {
             break;

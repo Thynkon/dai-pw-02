@@ -19,7 +19,8 @@ public class ClientParser extends ConnectionParser {
 
   private void sendRequest(String command)
       throws IOException {
-    out.writeChars(command);
+    System.out.println("Sending: " + Arrays.toString(command.split(" ")));
+    out.writeBytes(command);
     out.flush();
 
     // FIXME: following code doesn't work with DataInputStream
@@ -140,8 +141,21 @@ public class ClientParser extends ConnectionParser {
   /**
    * Create a directory on the server
    */
-  private void mkdir(String remotePath) {
-    throw new RuntimeException("Not implemented");
+  private void mkdir(String remotePath) throws IOException {
+
+    System.out.println("Sending PUT request to create directory");
+    if (!remotePath.endsWith("/")) {
+      remotePath = remotePath + "/";
+    }
+
+    String command = "PUT " + remotePath + Server.NEW_LINE;
+    sendRequest(command);
+
+    if (!parseStatus()) {
+      return;
+    }
+
+    System.out.println("directory created successfully");
   }
 
   @Override

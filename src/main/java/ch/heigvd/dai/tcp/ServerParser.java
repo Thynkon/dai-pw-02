@@ -47,7 +47,7 @@ public class ServerParser extends ConnectionParser {
    * @param errno the error number from {@link Errno}
    */
   private void sendError(int errno) throws IOException {
-    out.writeUTF(String.valueOf(errno) + String.valueOf((char) Server.EOT));
+    out.writeBytes(String.valueOf(errno) + String.valueOf((char) Server.EOT));
     out.flush();
   }
 
@@ -73,7 +73,7 @@ public class ServerParser extends ConnectionParser {
       sendError(Errno.EACCES);
     }
 
-    out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
+    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
     out.flush();
 
     try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
@@ -94,7 +94,7 @@ public class ServerParser extends ConnectionParser {
       sb.append("Directory is empty!");
     }
 
-    out.writeUTF(sb.toString() + String.valueOf((char) Server.EOT));
+    out.writeBytes(sb.toString() + String.valueOf((char) Server.EOT));
     out.flush();
   }
 
@@ -150,7 +150,7 @@ public class ServerParser extends ConnectionParser {
       file.delete();
     }
 
-    out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
+    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
     out.flush();
   }
 
@@ -178,12 +178,11 @@ public class ServerParser extends ConnectionParser {
       while (size > 0 && (bytesRead = in.read(buffer)) != -1) {
         fout.write(buffer, 0, bytesRead);
         size -= bytesRead;
-        // System.out.println("buffer: " + new String(buffer, StandardCharsets.UTF_8));
         System.out.println("remaining size: " + size);
       }
       System.out.println("finished reading");
 
-      out.writeUTF(String.valueOf(0) + String.valueOf((char) Server.EOT));
+      out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
       out.flush();
       System.out.println("Sent answer");
       fout.flush();
@@ -196,16 +195,52 @@ public class ServerParser extends ConnectionParser {
     }
   }
 
-  private void mkdir(Path path) {
-    throw new RuntimeException("Not implemented");
+  private void mkdir(Path path) throws IOException {
+    Path full_path = workDir.resolve(path).normalize();
+    File file = full_path.toFile();
+    if (file.exists()) {
+      System.err.println("File exist");
+      sendError(Errno.EEXIST);
+      return;
+    }
+
+    File parent = file.getParentFile();
+
+    if (!parent.exists()) {
+      System.err.println("Parent doesn't exist");
+      sendError(Errno.ENOENT);
+      return;
+    }
+
+    if (!parent.isDirectory()) {
+      System.err.println("Parent isn't a directory");
+      sendError(Errno.ENOTDIR);
+      return;
+    }
+
+    if (!parent.canWrite()) {
+      System.err.println("Cannot write to parent");
+      sendError(Errno.EACCES);
+      return;
+    }
+
+    if (!file.mkdir()) {
+      System.err.println("Failed to create dir");
+      sendError(Errno.EACCES);
+      return;
+    }
+
+    System.err.println("All good, replying");
+    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
+    out.flush();
   }
 
   @Override
   public void parse(String[] tokens) throws IOException {
     super.parse(tokens);
+    System.out.println("Received " + Arrays.toString(tokens) + " length: " + tokens.length);
     Server.Action action = Server.Action.fromString(tokens[0]);
 
-    System.out.println("Received " + Arrays.toString(tokens));
     switch (action) {
       case Server.Action.LIST -> {
         if (tokens.length == 2) {
@@ -228,12 +263,14 @@ public class ServerParser extends ConnectionParser {
         sendError(Errno.EINVAL);
       }
       case Server.Action.PUT -> {
-        if (tokens.length == 2) {
+        if (tokens.length == 2 && tokens[1].endsWith("/")) {
+          System.out.println("Calling mkdir()");
           mkdir(Path.of(tokens[1]));
           return;
         }
 
         if (tokens.length == 3) {
+          System.out.println("Calling put()");
           put(Path.of(tokens[1]), Integer.valueOf(tokens[2]));
           return;
         }

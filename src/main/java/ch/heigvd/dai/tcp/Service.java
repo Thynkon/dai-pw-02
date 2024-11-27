@@ -1,5 +1,7 @@
 package ch.heigvd.dai.tcp;
 
+import java.util.Arrays;
+
 public abstract class Service {
   protected int port;
   protected String address;
@@ -20,10 +22,13 @@ public abstract class Service {
      */
     public static Action fromString(String input) throws IllegalArgumentException {
       for (Action action : Action.values()) {
+        System.out.println("action: " + action.name() + "(" + action.name().length() + ")");
         if (action.name().equalsIgnoreCase(input)) {
           return action;
         }
       }
+      System.out.println("actual: " + input + "(" + input.length() + ")");
+      System.err.println(input + " not in list " + Arrays.toString(Action.values()));
       throw new IllegalArgumentException();
     }
   }
