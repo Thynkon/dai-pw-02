@@ -1,6 +1,7 @@
 package ch.heigvd.dai.tcp;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -43,11 +44,52 @@ public class ServerParser extends ConnectionParser {
   }
 
   /**
-   * @brief Send an error and flush the buffer
-   * @param errno the error number from {@link Errno}
+   * @brief Send a status code and flush the buffer
+   * @param code the error number from {@link Errno}
    */
+  private void sendCode(int code) throws IOException {
+    byte[] data = (String.valueOf(code) + (char) Server.EOT).getBytes(StandardCharsets.UTF_8);
+
+    out.write(data);
+    out.flush();
+  }
+
   private void sendError(int errno) throws IOException {
-    out.writeBytes(String.valueOf(errno) + String.valueOf((char) Server.EOT));
+    sendCode(errno);
+  }
+
+  private void sendSucess() throws IOException {
+    sendCode(0);
+  }
+
+  private void sendMessage(String message) throws IOException {
+    // Read the file in 4k blocks
+    byte[] buffer = new byte[4096];
+    int bytesRead;
+    int size = message.length();
+
+    System.out.println("in.available(): " + in.available());
+
+    // Convert the message to bytes
+    byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+    int offset = 0; // Current position in the message
+
+    System.out.println("Total bytes to send: " + messageBytes.length);
+
+    // Write the data in chunks
+    while (size > 0) {
+      bytesRead = Math.min(buffer.length, size);
+
+      System.arraycopy(messageBytes, offset, buffer, 0, bytesRead);
+
+      out.write(buffer, 0, bytesRead);
+
+      offset += bytesRead;
+      size -= bytesRead;
+    }
+    System.out.println("finished reading");
+
+    out.write(Server.EOT);
     out.flush();
   }
 
@@ -73,8 +115,7 @@ public class ServerParser extends ConnectionParser {
       sendError(Errno.EACCES);
     }
 
-    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
-    out.flush();
+    sendSucess();
 
     try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
       paths
@@ -94,8 +135,55 @@ public class ServerParser extends ConnectionParser {
       sb.append("Directory is empty!");
     }
 
-    out.writeBytes(sb.toString() + String.valueOf((char) Server.EOT));
-    out.flush();
+    sendMessage(sb.toString());
+  }
+
+  private void get(Path path) throws IOException {
+    System.out.println("ServerParser.get()");
+
+    Path full_path = workDir.resolve(path).normalize();
+    if (!Files.exists(full_path)) {
+      sendError(Errno.ENOENT);
+      return;
+    }
+
+    if (!Files.isReadable(full_path)) {
+      sendError(Errno.EACCES);
+      return;
+    }
+
+    if (Files.size(full_path) == 0) {
+      sendSucess();
+      sendMessage("");
+      return;
+    }
+
+    System.out.println("Reading file: " + full_path);
+    try (FileInputStream fin = new FileInputStream(full_path.toFile())) {
+      // Read the file in 4k blocks
+      byte[] buffer = new byte[4096];
+      int bytesRead;
+
+      // STATUS EOT
+      sendSucess();
+
+      // LENGTH EOT
+      System.out.println("sent length: " + Files.size(full_path));
+      sendMessage(String.valueOf(Files.size(full_path)));
+
+      System.out.println("starting to send file by chunks of " + buffer.length + " bytes");
+      while ((bytesRead = fin.read(buffer)) != -1) {
+        out.write(buffer, 0, bytesRead);
+      }
+      out.write(Server.EOT);
+      out.flush();
+      System.out.println("finished sending file");
+    } catch (FileNotFoundException e) {
+      // Shouldn't ever happen
+      System.err.println("Cannot open file to write");
+      sendError(Errno.ENOENT);
+      return;
+    }
   }
 
   /**
@@ -150,8 +238,7 @@ public class ServerParser extends ConnectionParser {
       file.delete();
     }
 
-    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
-    out.flush();
+    sendSucess();
   }
 
   private void put(Path path, int size) throws IOException {
@@ -188,8 +275,7 @@ public class ServerParser extends ConnectionParser {
       }
       System.out.println("finished reading");
 
-      out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
-      out.flush();
+      sendSucess();
       System.out.println("Sent answer");
       fout.flush();
 
@@ -237,8 +323,7 @@ public class ServerParser extends ConnectionParser {
     }
 
     System.err.println("All good, replying");
-    out.writeBytes(String.valueOf(0) + String.valueOf((char) Server.EOT));
-    out.flush();
+    sendSucess();
   }
 
   @Override
@@ -258,6 +343,18 @@ public class ServerParser extends ConnectionParser {
         sendError(Errno.EINVAL);
 
       }
+
+      case Server.Action.GET -> {
+        if (tokens.length == 2) {
+          get(Path.of(tokens[1]));
+          return;
+        }
+
+        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        sendError(Errno.EINVAL);
+
+      }
+
       case Server.Action.DELETE -> {
         if (tokens.length == 2) {
           delete(Path.of(tokens[1]));
@@ -286,7 +383,5 @@ public class ServerParser extends ConnectionParser {
       }
       default -> sendError(Errno.ENOTSUP);
     }
-
   }
-
 }

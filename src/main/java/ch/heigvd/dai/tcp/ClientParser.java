@@ -1,6 +1,8 @@
 package ch.heigvd.dai.tcp;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -19,8 +21,9 @@ public class ClientParser extends ConnectionParser {
 
   private void sendRequest(String command)
       throws IOException {
-    System.out.println("Sending: " + Arrays.toString(command.split(" ")));
-    out.writeBytes(command);
+    System.out.println("Sending: " + Arrays.toString(command.trim().split(" ")));
+    byte[] message = command.getBytes(StandardCharsets.UTF_8);
+    out.write(message);
     out.flush();
 
     // FIXME: following code doesn't work with DataInputStream
@@ -74,10 +77,65 @@ public class ClientParser extends ConnectionParser {
       result.append(c);
     }
 
-    System.out.println("Got result: ");
+    System.out.println("\nGot result: \n");
     Arrays.stream(result.toString().split(Server.DELIMITER)).forEach(s -> {
       System.out.println(s);
     });
+  }
+
+  private void get(Path remote, Path local) throws IOException {
+    if (Files.exists(local)) {
+      System.err.println(local + " already exists!");
+      return;
+    }
+
+    String command = "GET " + remote + Server.NEW_LINE;
+    sendRequest(command);
+
+    if (!parseStatus()) {
+      return;
+    }
+
+    int byteRead = 0;
+    StringBuilder b = new StringBuilder();
+
+    // status like ENOTDIR (20) are sent as two different chars/bytes: 2 (0x32) and
+    // then 0 (0x30)
+    while ((byteRead = in.read()) != -1) {
+      b.append((char) byteRead);
+
+      if (byteRead == Server.EOT) {
+        break;
+      }
+    }
+
+    int length = Integer.parseInt(b.toString().trim());
+    System.out.println("Downloading file of length: " + length);
+
+    if (Files.notExists(local)) {
+      Files.createFile(local);
+      System.out.println("File created: " + local.toAbsolutePath());
+    }
+
+    // TODO: handle directory creation
+    try (FileOutputStream fout = new FileOutputStream(local.toFile());) {
+      System.out.println("Writing local file:");
+
+      // read the file using 4K chunks
+      byte[] buffer = new byte[4096];
+      int bytesRead;
+
+      while (length > 0 && (bytesRead = in.read(buffer)) != -1) {
+        fout.write(buffer, 0, bytesRead);
+        length -= bytesRead;
+        System.out.println("remaining size: " + length);
+      }
+
+      fout.flush();
+      System.out.println("file written");
+    } catch (FileNotFoundException e) {
+      System.err.println("Unable to open file: " + e.getMessage() + ", path:" + local.toAbsolutePath());
+    }
   }
 
   public void delete(String path) throws IOException {
@@ -158,59 +216,56 @@ public class ClientParser extends ConnectionParser {
     System.out.println("directory created successfully");
   }
 
+  private boolean checkTokensLength(String[] tokens, int expected_length) {
+    if (tokens.length != expected_length) {
+      Client.usage();
+
+      // TODO: replace with logging
+      System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+      return false;
+    }
+
+    return true;
+  }
+
   @Override
   public void parse(String[] tokens) throws IOException, ServerHasGoneException {
     super.parse(tokens);
 
-    switch (tokens[0]) {
-      case "LIST", "ls", "list" -> {
-
-        // use current directory by default
-        if (tokens.length == 1) {
-          list(".");
-          return;
-        }
-
-        if (tokens.length != 2) {
-          System.err.println("Usage: LIST " + tokens[0] + " <remote path (defaults to '.')>");
-
-          // TODO: replace with logging
-          System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+    switch (tokens[0].toLowerCase()) {
+      case "list", "ls" -> {
+        if (!checkTokensLength(tokens, 2)) {
           return;
         }
 
         list(tokens[1]);
       }
-      case "DELETE", "rm", "delete" -> {
 
-        if (tokens.length != 2) {
-          System.err.println("Usage: " + tokens[0] + " <path>");
+      case "get" -> {
+        if (!checkTokensLength(tokens, 3)) {
+          return;
+        }
 
-          // TODO: replace with logging
-          System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+        get(Path.of(tokens[1]), Path.of(tokens[2]));
+      }
+
+      case "delete", "rm" -> {
+        if (!checkTokensLength(tokens, 2)) {
           return;
         }
 
         delete(tokens[1]);
       }
-      case "PUT", "put" -> {
-        if (tokens.length != 3) {
-          System.err.println("Usage: " + tokens[0] + " <local path> <remote path>");
-
-          // TODO: replace with logging
-          System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+      case "put" -> {
+        if (!checkTokensLength(tokens, 3)) {
           return;
         }
 
         put(Path.of(tokens[1]), tokens[2]);
 
       }
-      case "MKDIR", "mkdir" -> {
-        if (tokens.length != 2) {
-          System.err.println("Usage: " + tokens[0] + " <remote path>");
-
-          // TODO: replace with logging
-          System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+      case "mkdir" -> {
+        if (!checkTokensLength(tokens, 2)) {
           return;
         }
 

@@ -21,7 +21,7 @@ public class Client extends Service {
     this.port = port;
   }
 
-  private void usage() {
+  public static void usage() {
     System.out.println("Available commands: \n");
     System.out.println("\tLIST <path_to_dir>");
     System.out.println("\tGET <remote_path> <local_path>");
@@ -56,7 +56,7 @@ public class Client extends Service {
         }
 
         try {
-          String[] tokens = buffer.split(" ");
+          String[] tokens = buffer.trim().split(" ");
           if (buffer.toLowerCase().contains("exit")) {
             socket.close();
             break;
