@@ -1,10 +1,6 @@
 package ch.heigvd.dai.tcp;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Arrays;
 
 public abstract class Service {
   protected int port;
@@ -26,53 +22,17 @@ public abstract class Service {
      */
     public static Action fromString(String input) throws IllegalArgumentException {
       for (Action action : Action.values()) {
+        System.out.println("action: " + action.name() + "(" + action.name().length() + ")");
         if (action.name().equalsIgnoreCase(input)) {
           return action;
         }
       }
+      System.out.println("actual: " + input + "(" + input.length() + ")");
+      System.err.println(input + " not in list " + Arrays.toString(Action.values()));
       throw new IllegalArgumentException();
     }
   }
 
   abstract public void launch();
-
-  abstract public void delete(BufferedReader in, BufferedWriter out, Path path) throws IOException;
-
-  abstract public void list(BufferedReader in, BufferedWriter out, Path path) throws IOException;
-
-  protected void parseList(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
-    if (tokens.length != 2) {
-      System.err.println("Wrong amount of arguments.\n Take a look at the spec!");
-      return;
-    }
-
-    list(in, out, Paths.get(tokens[1]));
-  }
-
-  protected void parseDelete(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
-    if (tokens.length != 2) {
-      System.err.println("Wrong amount of arguments.\n Take a look at the spec!");
-      return;
-    }
-
-    delete(in, out, Path.of(tokens[1]));
-  }
-
-  protected void parseTokens(BufferedReader in, BufferedWriter out, String[] tokens) throws IOException {
-    Action action = Action.fromString(tokens[0]);
-
-    switch (action) {
-      case LIST:
-        parseList(in, out, tokens);
-        break;
-      case DELETE:
-        parseDelete(in, out, tokens);
-        break;
-
-      default:
-        System.err.println("Unknown action: " + action);
-        break;
-    }
-  }
 
 }
