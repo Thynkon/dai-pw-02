@@ -29,6 +29,7 @@
               <a href="#with-docker">With docker</a>
               <ul>
                 <li><a href="#building-the-image">Building the image</a></li>
+                <li><a href="#publishing-the-docker-image">Publishing the Docker image</a></li>
                 <li>
                   <a href="#running-the-image">Running the image</a>
                   <ul>
@@ -36,6 +37,7 @@
                     <li><a href="#client">Client</a></li>
                   </ul>
                 </li>
+                <li><a href="#demo">Demo</a></li>
               </ul>
             </li>
           </ul>
@@ -199,7 +201,7 @@ The same image can be used for the server and client.
 You can build the container by cloning the repository and using:
 
 ```bash
-docker build . -t dai-lab-02:latest
+docker build . -t dai-pw-02:latest
 ```
 
 Or with the [compose.yml][compose] file provided
@@ -215,13 +217,29 @@ parameters by providing the following environment variables.
 - SERVER_PORT: the port to map on the host (default: 1234)
 - MAX_CONNECTIONS: the number of connections to handle in parallel (default: 2)
 
+##### Publishing the Docker image
+
+Even though our Docker image is automatically built and publish to Github thanks
+to a custom `workflow`, you can publish it manually thanks to the following commands:
+
+```sh
+# Login to GitHub Container Registry
+docker login ghcr.io -u \<username\>
+
+# Tag the image with the correct format
+docker tag dai-pw-02 ghcr.io/\<username\>/dai-pw-02:latest
+
+# Publish the image on GitHub Container Registry
+docker push ghcr.io/\<username\>/dai-pw-02:latest
+```
+
 ##### Running the image
 
 The container simply runs the jar file with the provided arguments so the
 following lines do the same thing
 
 ```bash
-docker run --rm -v "./data:/data" dai-lab-02:latest --help
+docker run --rm -v "./data:/data" dai-pw-02:latest --help
 java -jar simpft-1.0.jar --help
 ```
 
@@ -233,7 +251,7 @@ You can run the server either manually using
 docker run --rm           \
   -p 127.0.0.1:1234:1234  \
   -v "./server-data:/data"\
-  dai-lab-02:latest       \
+  dai-pw-02:latest       \
   --mode server           \
   --address 0.0.0.0       \
   --root-dir /data        \
@@ -257,7 +275,7 @@ docker compose logs -f server
 When using the client, you should run the container manually.
 
 ```bash
-docker run --rm -v "./client-data:/data" dai-lab-02:latest --mode client -a <server-address>
+docker run --rm -v "./client-data:/data" dai-pw-02:latest --mode client -a <server-address>
 ```
 
 Or with the [compose.yml][compose]
@@ -266,23 +284,7 @@ Or with the [compose.yml][compose]
 docker compose run client
 ```
 
-###### Publishing the Docker image
-
-Even though our Docker image is automatically built and publish to Github thanks
-to a custom `workflow`, you can publish it manually thanks to the following commands:
-
-```sh
-# Login to GitHub Container Registry
-docker login ghcr.io -u \<username\>
-
-# Tag the image with the correct format
-docker tag dai-pw-02 ghcr.io/\<username\>/dai-pw-02:latest
-
-# Publish the image on GitHub Container Registry
-docker push ghcr.io/\<username\>/dai-pw-02:latest
-```
-
-###### Demo
+##### Demo
 
 The demo is done using the `compose.yml` file at the root of the repository and
 the content of `client-data` and `server-data`. You can use the `--build` flag
