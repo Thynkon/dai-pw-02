@@ -2,6 +2,7 @@ package ch.heigvd.dai.tcp;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import org.tinylog.Logger;
 
 public abstract class Service {
   protected int port;
@@ -24,14 +25,12 @@ public abstract class Service {
      */
     public static Action fromString(String input) throws IllegalArgumentException {
       for (Action action : Action.values()) {
-        // System.out.println("action: " + action.name() + "(" + action.name().length()
-        // + ")");
         if (action.name().equalsIgnoreCase(input)) {
           return action;
         }
       }
-      System.out.println("actual: " + input + "(" + input.length() + ")");
-      System.err.println(input + " not in list " + Arrays.toString(Action.values()));
+      Logger.debug("actual: " + input + "(" + input.length() + ")");
+      Logger.error(input + " not in list " + Arrays.toString(Action.values()));
       throw new IllegalArgumentException();
     }
   }
