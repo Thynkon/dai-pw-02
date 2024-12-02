@@ -7,6 +7,8 @@ services:
       - "${SERVER_ADDRESS:-127.0.0.1}:${SERVER_PORT:-1234}:1234"
     volumes:
       - "./server-data:/data:rw"
+    networks:
+      - simpnet
     command: "--mode server --connections ${MAX_CONNECTIONS:-2} --address 0.0.0.0 --work-dir /data"
 
   client:
@@ -16,6 +18,12 @@ services:
       - server
     volumes:
       - "./client-data:/data:rw"
+    networks:
+      - simpnet
     command: "--mode client --address server --work-dir /data"
     stdin_open: true
     tty: true # Allocate a pseudo-TTY for debug purposes
+
+networks:
+  simpnet:
+    driver: bridge
