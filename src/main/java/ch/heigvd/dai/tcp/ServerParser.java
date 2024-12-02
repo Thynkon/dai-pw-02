@@ -12,6 +12,8 @@ import java.util.stream.Stream;
 
 import ch.heigvd.dai.Errno;
 
+import org.tinylog.Logger;
+
 public class ServerParser extends ConnectionParser {
   public final Path workDir;
 
@@ -68,13 +70,13 @@ public class ServerParser extends ConnectionParser {
     int bytesRead;
     int size = message.length();
 
-    System.out.println("in.available(): " + in.available());
+    Logger.debug("in.available(): " + in.available());
 
     // Convert the message to bytes
     byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
     int offset = 0; // Current position in the message
 
-    System.out.println("Total bytes to send: " + messageBytes.length);
+    Logger.debug("Total bytes to send: " + messageBytes.length);
 
     // Write the data in chunks
     while (size > 0) {
@@ -87,7 +89,7 @@ public class ServerParser extends ConnectionParser {
       offset += bytesRead;
       size -= bytesRead;
     }
-    System.out.println("finished reading");
+    Logger.debug("finished reading");
 
     out.write(Server.EOT);
     out.flush();
@@ -161,7 +163,7 @@ public class ServerParser extends ConnectionParser {
       return;
     }
 
-    System.out.println("Reading file: " + full_path);
+    Logger.debug("Reading file: " + full_path);
     try (FileInputStream fin = new FileInputStream(full_path.toFile())) {
       // Read the file in 4k blocks
       byte[] buffer = new byte[4096];
@@ -171,18 +173,18 @@ public class ServerParser extends ConnectionParser {
       sendSucess();
 
       // LENGTH EOT
-      System.out.println("sent length: " + Files.size(full_path));
+      Logger.debug("sent length: " + Files.size(full_path));
       sendMessage(String.valueOf(Files.size(full_path)));
 
-      System.out.println("starting to send file by chunks of " + buffer.length + " bytes");
+      Logger.debug("starting to send file by chunks of " + buffer.length + " bytes");
       while ((bytesRead = fin.read(buffer)) != -1) {
         out.write(buffer, 0, bytesRead);
       }
       out.flush();
-      System.out.println("finished sending file");
+      Logger.debug("finished sending file");
     } catch (FileNotFoundException e) {
       // Shouldn't ever happen
-      System.err.println("Cannot open file to write");
+      Logger.error("Cannot open file to write");
       sendError(Errno.ENOENT);
       return;
     }
@@ -233,7 +235,7 @@ public class ServerParser extends ConnectionParser {
 
       } catch (IOException e) {
         sendError(Errno.EIO);
-        System.err.println("Unable to delete directory");
+        Logger.error("Unable to delete directory");
         return;
       }
     } else {
@@ -247,11 +249,11 @@ public class ServerParser extends ConnectionParser {
 
     Path full_path = workDir.resolve(path).normalize();
     File file = full_path.toFile();
-    System.out.println("expected size: " + size);
+    Logger.debug("expected size: " + size);
 
-    System.out.println("creating file");
+    Logger.debug("creating file");
     if (!file.createNewFile()) {
-      sendError(Errno.EACCES); // TODO: use the correct error
+      sendError(Errno.EACCES);
 
       // TODO: check if the implementation matches the protocol and fix whichever is
       // simpler to fix
@@ -260,30 +262,30 @@ public class ServerParser extends ConnectionParser {
       in.skipBytes(size);
       return;
     }
-    System.out.println("created file");
+    Logger.debug("created file");
 
     try (FileOutputStream fout = new FileOutputStream(file)) {
       // Read the file in 4k blocks
       byte[] buffer = new byte[4096];
       int bytesRead;
 
-      System.out.println("in.available(): " + in.available());
+      Logger.debug("in.available(): " + in.available());
 
-      System.out.println("starting to read");
+      Logger.debug("starting to read");
       while (size > 0 && (bytesRead = in.read(buffer, 0, Math.min(size, buffer.length))) != -1) {
         fout.write(buffer, 0, bytesRead);
         size -= bytesRead;
-        System.out.println("remaining size: " + size);
+        Logger.debug("remaining size: " + size);
       }
-      System.out.println("finished reading");
+      Logger.debug("finished reading");
 
       sendSucess();
-      System.out.println("Sent answer");
+      Logger.debug("Sent answer");
       fout.flush();
 
     } catch (FileNotFoundException e) {
       // Shouldn't ever happen
-      System.err.println("Cannot open file to write");
+      Logger.error("Cannot open file to write");
       sendError(Errno.ENOENT);
       return;
     }
@@ -293,7 +295,7 @@ public class ServerParser extends ConnectionParser {
     Path full_path = workDir.resolve(path).normalize();
     File file = full_path.toFile();
     if (file.exists()) {
-      System.err.println("File exist");
+      Logger.error("File exist");
       sendError(Errno.EEXIST);
       return;
     }
@@ -301,37 +303,37 @@ public class ServerParser extends ConnectionParser {
     File parent = file.getParentFile();
 
     if (!parent.exists()) {
-      System.err.println("Parent doesn't exist");
+      Logger.error("Parent doesn't exist");
       sendError(Errno.ENOENT);
       return;
     }
 
     if (!parent.isDirectory()) {
-      System.err.println("Parent isn't a directory");
+      Logger.error("Parent isn't a directory");
       sendError(Errno.ENOTDIR);
       return;
     }
 
     if (!parent.canWrite()) {
-      System.err.println("Cannot write to parent");
+      Logger.error("Cannot write to parent");
       sendError(Errno.EACCES);
       return;
     }
 
     if (!file.mkdir()) {
-      System.err.println("Failed to create dir");
+      Logger.error("Failed to create dir");
       sendError(Errno.EACCES);
       return;
     }
 
-    System.err.println("All good, replying");
+    Logger.error("All good, replying");
     sendSucess();
   }
 
   @Override
   public void parse(String[] tokens) throws IOException {
     super.parse(tokens);
-    System.out.println("Received " + Arrays.toString(tokens) + " length: " + tokens.length);
+    Logger.debug("Received " + Arrays.toString(tokens) + " length: " + tokens.length);
     Server.Action action = Server.Action.fromString(tokens[0]);
 
     switch (action) {
@@ -341,7 +343,7 @@ public class ServerParser extends ConnectionParser {
           return;
         }
 
-        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        Logger.error("Invalid tokens" + Arrays.toString(tokens));
         sendError(Errno.EINVAL);
 
       }
@@ -352,7 +354,7 @@ public class ServerParser extends ConnectionParser {
           return;
         }
 
-        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        Logger.error("Invalid tokens" + Arrays.toString(tokens));
         sendError(Errno.EINVAL);
 
       }
@@ -363,24 +365,23 @@ public class ServerParser extends ConnectionParser {
           return;
         }
 
-        // TODO: replace with logging
-        System.err.println("Invalid tokens: " + Arrays.toString(tokens));
+        Logger.error("Invalid tokens: " + Arrays.toString(tokens));
         sendError(Errno.EINVAL);
       }
       case Server.Action.PUT -> {
         if (tokens.length == 2 && tokens[1].endsWith("/")) {
-          System.out.println("Calling mkdir()");
+          Logger.debug("Calling mkdir()");
           mkdir(Path.of(tokens[1]));
           return;
         }
 
         if (tokens.length == 3) {
-          System.out.println("Calling put()");
+          Logger.debug("Calling put()");
           put(Path.of(tokens[1]), Integer.valueOf(tokens[2]));
           return;
         }
 
-        System.err.println("Invalid tokens" + Arrays.toString(tokens));
+        Logger.error("Invalid tokens" + Arrays.toString(tokens));
         sendError(Errno.EINVAL);
       }
       default -> sendError(Errno.ENOTSUP);

@@ -13,10 +13,6 @@ import ch.heigvd.dai.exceptions.ServerHasGoneException;
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
 
-  // public Client() {
-  // this("localhost", 1234, Path.of("."));
-  // }
-
   public Client(String host, int port, Path work_dir) {
     this.address = host;
     this.port = port;
@@ -29,7 +25,10 @@ public class Client extends Service {
     System.out.println("\tGET <remote_path> <local_path>");
     System.out.println("\tPUT <local_path> <remote_path>");
     System.out.println("\tMKDIR <remote_path>");
-    System.out.println("\tDELETE <path_to_file>\n");
+    System.out.println("\tDELETE <remote_path>\n");
+    System.out.println("Available aliases for commands (only client side): \n");
+    System.out.println("\tls : LIST <path_to_dir>");
+    System.out.println("\trm : DElETE <remote_path>");
   }
 
   @Override
