@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import ch.heigvd.dai.tcp.Server;
 import ch.heigvd.dai.tcp.Client;
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
 
 import org.tinylog.Logger;
 
@@ -36,6 +37,9 @@ public class Root implements Callable<Integer> {
   @CommandLine.Option(names = { "-w",
       "--work-dir" }, description = "The directory containing all the files. It is a base directory where every manipulation of files will happen.")
   protected Path work_dir;
+
+  @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display this help message")
+  boolean usageHelpRequested;
 
   public Integer call() {
     if (mode == Mode.Server) {
@@ -66,6 +70,11 @@ public class Root implements Callable<Integer> {
       } catch (UnknownHostException e) {
         Logger.error("Invalid host or DNS problem regarding address:" + address);
         return -1;
+      }
+    } else {
+      if (usageHelpRequested) {
+        Client.usage();
+        return 0;
       }
     }
 
