@@ -310,43 +310,43 @@ docker compose run --rm client
 # each line that starts with '>' here is a command that's sent through the client.
 
 # List the content of the current working directory on the remote
->list .
+> list .
 
 # Check that it corresponds to the content of server-data
 ls ./server-data
 
 # Upload a text file
->put local_dir/hello_world.txt ./
+> put local_dir/hello_world.txt ./
 
 # Check that the file was uploaded correctly
 diff -s client-data/local_dir/hello_world.txt server-data/hello_world.txt
 
 # Upload a binary file
->put thynkon.jpg ./image.jpg
+> put thynkon.jpg ./image.jpg
 
 # Check that the file was uploaded correctly
 diff -s client-data/thynkon.jpg server-data/image.jpg
 
 # Download a text file from the server
->get some_remote_file.txt remote.txt
+> get some_remote_file.txt remote.txt
 
 # Check that the file was downloaded correctly
 diff -s client-data/remote.txt server-data/some_remote_file.txt
 
 # Download a binary file from the server
->get remote_dir/mon.png local_dir/image.png
+> get remote_dir/mon.png local_dir/image.png
 
 # Check that the file was downloaded correctly
 diff -s client-data/local_dir/image.png server-data/remote_dir/mon.png
 
 # Remove a file on the remote
->delete image.jpg
+> delete image.jpg
 
 # Check that the file is actually removed
 ls server-data
 
 # Close the connection (You can also use Ctrl+d)
->exit
+> exit
 
 # Stop the server
 docker compose down server

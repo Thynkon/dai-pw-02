@@ -14,12 +14,22 @@ public class Server extends Service {
   public static final String NEW_LINE = "\n";
   public static final int EOT = 0x04;
 
-  public Server(String address, int port, int number_of_connections, Path work_dir) throws UnknownHostException {
-    this.port = port;
+  /**
+   * Server constructor
+   *
+   * @throws UnknownHostException when the listening address cannot be resolved
+   * @throws NullPointerException when the working directory is null
+   * @param address               the address to listen on
+   * @param port                  the port to listen on
+   * @param number_of_connections the number of concurrent connections to handle
+   * @param work_dir              the working directory used when interracting
+   *                              with files and directories
+   */
+  public Server(String address, int port, int number_of_connections, Path work_dir)
+      throws UnknownHostException, NullPointerException {
+    super(port, address, work_dir);
     this.number_of_threads = number_of_connections;
-    this.address = address;
     this.iaddress = InetAddress.getByName(address);
-    this.work_dir = work_dir;
   }
 
   @Override
