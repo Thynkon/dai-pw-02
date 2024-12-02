@@ -123,6 +123,7 @@ To install and use docker, follow the [official documentation](https://docs.dock
 If you want to test the `Github actions` on your machine, you can use [act](https://github.com/nektos/act).
 
 Before you launch any workflow, make sure you have created the following repository secrets:
+
 - `AUTH_TOKEN`
 - `DOCKER_USERNAME`
 - `DOCKER_PASSWORD`
@@ -265,9 +266,10 @@ Or with the [compose.yml][compose]
 docker compose run client
 ```
 
-## Publishing the Docker image
+###### Publishing the Docker image
 
-Even though our Docker image is automatically built and publish to Github thanks to a custom `workflow`, you can publish it manually thanks to the following commands:
+Even though our Docker image is automatically built and publish to Github thanks
+to a custom `workflow`, you can publish it manually thanks to the following commands:
 
 ```sh
 # Login to GitHub Container Registry
@@ -278,6 +280,74 @@ docker tag dai-pw-02 ghcr.io/\<username\>/dai-pw-02:latest
 
 # Publish the image on GitHub Container Registry
 docker push ghcr.io/\<username\>/dai-pw-02:latest
+```
+
+###### Demo
+
+The demo is done using the `compose.yml` file at the root of the repository and
+the content of `client-data` and `server-data`. You can use the `--build` flag
+if you want to build the image yourself otherwise the `compose.yml` is already
+setup to pull the latest version from the [GitHub Container Registry](https://github.com/Thynkon/dai-pw-02/pkgs/container/dai-pw-02)
+
+> [!NOTE]
+> To properly check if the file content you need to have another terminal open or
+> use a multiplexer such as [zellij](https://zellij.dev) or [tmux](https://github.com/tmux/tmux)
+
+```sh
+# Start the server
+docker compose up -d server
+
+# Display the server logs (on another terminal)
+docker compose logs -f server
+
+# Start the client interactively
+docker compose run --rm client
+
+# Now, both the client and server should show that the connection was established
+# and the client shows the '>' symbol to indicate that it is waiting for user input.
+# each line that starts with '>' here is a command that's sent through the client.
+
+# List the content of the current working directory on the remote
+>list .
+
+# Check that it corresponds to the content of server-data
+ls ./server-data
+
+# Upload a text file
+>put local_dir/hello_world.txt ./
+
+# Check that the file was uploaded correctly
+diff -s client-data/local_dir/hello_world.txt server-data/hello_world.txt
+
+# Upload a binary file
+>put thynkon.jpg ./image.jpg
+
+# Check that the file was uploaded correctly
+diff -s client-data/thynkon.jpg server-data/image.jpg
+
+# Download a text file from the server
+>get some_remote_file.txt remote.txt
+
+# Check that the file was downloaded correctly
+diff -s client-data/remote.txt server-data/some_remote_file.txt
+
+# Download a binary file from the server
+>get remote_dir/mon.png local_dir/image.png
+
+# Check that the file was downloaded correctly
+diff -s client-data/local_dir/image.png server-data/remote_dir/mon.png
+
+# Remove a file on the remote
+>delete image.jpg
+
+# Check that the file is actually removed
+ls server-data
+
+# Close the connection (You can also use Ctrl+d)
+>exit
+
+# Stop the server
+docker compose down server
 ```
 
 <!-- CONTRIBUTING -->
