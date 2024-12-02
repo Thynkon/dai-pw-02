@@ -6,22 +6,24 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
 
-  public Client() {
-    this("localhost", 1234);
-  }
+  // public Client() {
+  // this("localhost", 1234, Path.of("."));
+  // }
 
-  public Client(String host, int port) {
+  public Client(String host, int port, Path work_dir) {
     this.address = host;
     this.port = port;
+    this.work_dir = work_dir;
   }
 
-  private void usage() {
+  public static void usage() {
     System.out.println("Available commands: \n");
     System.out.println("\tLIST <path_to_dir>");
     System.out.println("\tGET <remote_path> <local_path>");
@@ -35,7 +37,7 @@ public class Client extends Service {
     System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
 
     try (Socket socket = new Socket(address, port);
-        ClientParser parser = new ClientParser(socket.getInputStream(), socket.getOutputStream());) {
+        ClientParser parser = new ClientParser(socket.getInputStream(), socket.getOutputStream(), work_dir);) {
 
       System.out.println("[Client " + CLIENT_ID + "] connected to " + address + ":" + port);
 
@@ -56,7 +58,7 @@ public class Client extends Service {
         }
 
         try {
-          String[] tokens = buffer.split(" ");
+          String[] tokens = buffer.trim().split(" ");
           if (buffer.toLowerCase().contains("exit")) {
             socket.close();
             break;

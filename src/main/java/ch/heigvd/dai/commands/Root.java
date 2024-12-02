@@ -68,7 +68,7 @@ public class Root implements Callable<Integer> {
       }
     }
 
-    Client client = new Client(address, port);
+    Client client = new Client(address, port, work_dir);
     client.launch();
 
     return 0;
