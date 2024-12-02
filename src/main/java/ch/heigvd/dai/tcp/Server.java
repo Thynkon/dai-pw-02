@@ -2,7 +2,6 @@ package ch.heigvd.dai.tcp;
 
 import java.io.*;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +13,6 @@ public class Server extends Service {
   public static final String DELIMITER = ":";
   public static final String NEW_LINE = "\n";
   public static final int EOT = 0x04;
-  public final Path work_dir;
 
   public Server(String address, int port, int number_of_connections, Path work_dir) throws UnknownHostException {
     this.port = port;

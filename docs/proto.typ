@@ -44,7 +44,7 @@ allows a client to interact with files on a server.
 == Section 2 - Transport protocol
 
 The SimpFT protocol is a text based protocol. It uses TCP to ensure reliability.
-The default port is 1234.
+The default port is `1234`.
 
 Thee protocol has three kinds of messages:
 
@@ -89,10 +89,10 @@ Even though you will find in the examples bellow the name of the actions in uppe
 
 The valid messages are:
 
-- LIST - List the contents of directories
-- GET - Downloads a file
-- PUT - Create a new file
-- DELETE - Delete a file
+- `LIST` - List the contents of directories
+- `GET` - Downloads a file
+- `PUT` - Create a new file
+- `DELETE` - Delete a file
 
 === LIST
 
@@ -122,41 +122,50 @@ colon separated list of files and folders. Each folders have a trailing `/`
 appended to them.
 
 On error, only the error code is sent. `<CODE>` matches one of:
-- EACCES
-- ENOENT
-- ENOTDIR
+- `EACCES`
+- `ENOENT`
+- `ENOTDIR`
 
 === GET
 
 The client sends a get request to the server to download a file.
 
 #warning(title: "Downloading directories")[
-Notice that directories can not be downloaded. If you want to download the content of a directory, you first have 
+Notice that directories can not be downloaded. If you want to download the content of a directory you have to
 to list its contents to fetch the name of the files and then download them.
 ]
 
 ==== Request
 
 ```txt
-GET <PATH>
+GET <REMOTE_PATH> <LOCAL_PATH>
 ```
+
+- `REMOTE_PATH`: The path of the file to be downloaded
+- `LOCAL_PATH`: The path where the downloaded content should be stored.
+
 
 ==== Response
 
 ```txt
 <CODE>
 ```
+
+```txt
+<FILE_SIZE>
+```
+
 ```bin
 <DATA>
 ```
 
-On a successful request, the server answers with the code `0`, followed by the
-content of the file in binary form.
+On a successful request, the server answers with the code `0`, followed by the size (a non-negative integer value) of the file as well as its
+content in binary form.
 
 On error, only the error code is sent. `<CODE>` matches one of:
-- EACCES
-- ENOENT
-- EISDIR
+- `EACCES`
+- `ENOENT`
+- `EISDIR`
 
 
 === PUT
@@ -190,10 +199,10 @@ On a successful request, the server answers with the code `0` indicating that
 the file or directory was created successfully.
 
 On error, only the error code is sent. `<CODE>` matches one of:
-- EACCES
-- EFBIG
-- EISDIR
-- ENOENT
+- `EACCES`
+- `EFBIG`
+- `EISDIR`
+- `ENOENT`
 
 === DELETE
 
@@ -219,9 +228,9 @@ On a successful request, the server answers with the code `0` indicating that th
 file or folder was removed successfully.
 
 On error, only the error code is sent. `<CODE>` matches one of:
-- EACCES
-- ENOENT
-- EINVAL
+- `EACCES`
+- `ENOENT`
+- `EINVAL`
 
 == Section 4 - Examples
 
