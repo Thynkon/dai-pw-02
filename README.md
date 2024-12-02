@@ -11,6 +11,7 @@
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
+        <li><a href="#get-the-source-code">Get the source code</a></li>
         <li><a href="#documentation-and-protocol">Documentation and protocol</a></li>
         <li>
           <a href="#prerequisites">Prerequisites</a>
@@ -69,7 +70,18 @@
 SimpFT is a simple file transfer application to upload and download files on a
 server.
 
+The client offers a `REPL` so you can type commands interactively. Options like the server address as well as the server port (on both server and client) can be specified.
+
 You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
+
+### Get the source code
+
+First of all, download the source code:
+
+```sh
+git clone https://github.com/Thynkon/dai-pw-02
+cd dai-pw-02
+```
 
 ### Documentation and protocol
 
@@ -180,6 +192,7 @@ simply run the application like this:
 ```bash
 # Run as server
 java -jar simpft.jar --mode server --port 1234 --address localhost --connections 2 --root-dir /path/to/dir
+
 # Run client
 java -jar simpft.jar --mode client --port 1234 --address localhost
 ```
@@ -224,13 +237,13 @@ to a custom `workflow`, you can publish it manually thanks to the following comm
 
 ```sh
 # Login to GitHub Container Registry
-docker login ghcr.io -u \<username\>
+docker login ghcr.io -u <username>
 
 # Tag the image with the correct format
-docker tag dai-pw-02 ghcr.io/\<username\>/dai-pw-02:latest
+docker tag dai-pw-02 ghcr.io/<username>/dai-pw-02:latest
 
 # Publish the image on GitHub Container Registry
-docker push ghcr.io/\<username\>/dai-pw-02:latest
+docker push ghcr.io/<username>/dai-pw-02:latest
 ```
 
 ##### Running the image
