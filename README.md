@@ -40,6 +40,9 @@
             </li>
           </ul>
         </li>
+        <li>
+          <a href="#building-the-image">Building the Docker image</a>
+        </li>
       </ul>
     </li>
     <li><a href="#contributing">Contributions</a></li>
@@ -119,20 +122,35 @@ To install and use docker, follow the [official documentation](https://docs.dock
 
 If you want to test the `Github actions` on your machine, you can use [act](https://github.com/nektos/act).
 
-Before you launch any workflow, make sure you have created a repository secret named `AUTH_TOKEN`.
+Before you launch any workflow, make sure you have created the following repository secrets:
+- `AUTH_TOKEN`
+- `DOCKER_USERNAME`
+- `DOCKER_PASSWORD`
 
 Then, create a file named `.secrets` which should contain the following:
 
 ```env
 AUTH_TOKEN=<YOUR_AUTH_TOKEN>
+DOCKER_USERNAME=<USERNAME>
+DOCKER_PASSWORD=<GITHUB_APPLICATION_TOKEN>
 ```
 
-Finally, launch the publish workflow (which publishes the mvn package to Github repository) with the following command:
+Finally, launch the publish workflow (which publishes the mvn package to Github registry) with the following command:
 
 ```sh
 act --secret-file .secrets
 ```
 
+We have created two jobs: one that publishes this app to the `Github`'s `Maven` registry and the other builds and pushes the Docker image into `Github`'s container registry.
+
+You can launch them using the following commands:
+
+```sh
+# Publish Docker image to Github repository
+act --secret-file .secrets -j build-and-push-image
+# Publish .jar to Github repository
+act --secret-file .secrets -j publish
+```
 
 The workflows automatically publish this project to the GitHub's `mvn` and `Docker` registries.
 
@@ -245,6 +263,21 @@ Or with the [compose.yml][compose]
 
 ```bash
 docker compose run client
+```
+
+## Publishing the Docker image
+
+Even though our Docker image is automatically built and publish to Github thanks to a custom `workflow`, you can publish it manually thanks to the following commands:
+
+```sh
+# Login to GitHub Container Registry
+docker login ghcr.io -u \<username\>
+
+# Tag the image with the correct format
+docker tag dai-pw-02 ghcr.io/\<username\>/dai-pw-02:latest
+
+# Publish the image on GitHub Container Registry
+docker push ghcr.io/\<username\>/dai-pw-02:latest
 ```
 
 <!-- CONTRIBUTING -->
