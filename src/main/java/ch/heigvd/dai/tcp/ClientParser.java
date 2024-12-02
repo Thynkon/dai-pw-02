@@ -12,6 +12,13 @@ import ch.heigvd.dai.exceptions.ServerHasGoneException;
 public class ClientParser extends ConnectionParser {
   public final Path workDir;
 
+  /**
+   * ClientParser constructor
+   *
+   * @param in      the input stream
+   * @param out     the output stream
+   * @param workDir the working directory used to resolve the path of files
+   */
   public ClientParser(DataInputStream in, DataOutputStream out, Path workDir) {
     super(in, out);
     this.workDir = workDir;
