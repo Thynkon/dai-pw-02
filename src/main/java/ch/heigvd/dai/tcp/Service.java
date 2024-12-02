@@ -1,10 +1,12 @@
 package ch.heigvd.dai.tcp;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 
 public abstract class Service {
   protected int port;
   protected String address;
+  protected Path work_dir;
 
   public enum Action {
     LIST,

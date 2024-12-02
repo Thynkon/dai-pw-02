@@ -10,13 +10,16 @@ import ch.heigvd.dai.Errno;
 import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
 public class ClientParser extends ConnectionParser {
+  public final Path workDir;
 
-  public ClientParser(DataInputStream in, DataOutputStream out) {
+  public ClientParser(DataInputStream in, DataOutputStream out, Path workDir) {
     super(in, out);
+    this.workDir = workDir;
   }
 
-  public ClientParser(InputStream in, OutputStream out) {
+  public ClientParser(InputStream in, OutputStream out, Path work_dir) {
     super(in, out);
+    this.workDir = work_dir;
   }
 
   private void sendRequest(String command)
@@ -84,8 +87,10 @@ public class ClientParser extends ConnectionParser {
   }
 
   private void get(Path remote, Path local) throws IOException {
-    if (Files.exists(local)) {
-      System.err.println(local + " already exists!");
+    Path localFullPath = workDir.resolve(local).normalize();
+
+    if (Files.exists(localFullPath)) {
+      System.err.println(localFullPath + " already exists!");
       return;
     }
 
@@ -95,6 +100,21 @@ public class ClientParser extends ConnectionParser {
     if (!parseStatus()) {
       return;
     }
+
+    // create parent directories if needed
+    Path parentDir = localFullPath.getParent();
+    // if user only specifier filename like: myfile.java instread of
+    // mydir/myfile.java
+    if (!parentDir.equals(workDir.toAbsolutePath())) {
+      try {
+        Files.createDirectories(parentDir);
+      } catch (IOException e) {
+        System.err.println("Failed to create directories for file: " + local);
+        return;
+      }
+    }
+
+    System.out.println("ClientParser.get()->" + parentDir);
 
     int byteRead = 0;
     StringBuilder b = new StringBuilder();
@@ -112,13 +132,13 @@ public class ClientParser extends ConnectionParser {
     int length = Integer.parseInt(b.toString().trim());
     System.out.println("Downloading file of length: " + length);
 
-    if (Files.notExists(local)) {
-      Files.createFile(local);
-      System.out.println("File created: " + local.toAbsolutePath());
+    if (Files.notExists(localFullPath)) {
+      Files.createFile(localFullPath);
+      System.out.println("File created: " + localFullPath);
     }
 
     // TODO: handle directory creation
-    try (FileOutputStream fout = new FileOutputStream(local.toFile());) {
+    try (FileOutputStream fout = new FileOutputStream(localFullPath.toFile());) {
       System.out.println("Writing local file:");
 
       // read the file using 4K chunks
@@ -134,12 +154,13 @@ public class ClientParser extends ConnectionParser {
       fout.flush();
       System.out.println("file written");
     } catch (FileNotFoundException e) {
-      System.err.println("Unable to open file: " + e.getMessage() + ", path:" + local.toAbsolutePath());
+      System.err.println("Unable to open file: " + e.getMessage() + ", path:" + localFullPath.toAbsolutePath());
     }
   }
 
   public void delete(String path) throws IOException {
-    String command = "DELETE " + path + Server.NEW_LINE;
+    Path localFullPath = workDir.resolve(path).normalize();
+    String command = "DELETE " + localFullPath + Server.NEW_LINE;
     sendRequest(command);
 
     if (!parseStatus()) {
@@ -153,7 +174,8 @@ public class ClientParser extends ConnectionParser {
    * Upload a file to the server
    */
   private void put(Path localPath, String remotePath) throws IOException {
-    File file = localPath.toFile();
+    Path localFullPath = workDir.resolve(localPath).normalize();
+    File file = localFullPath.toFile();
 
     if (!file.exists()) {
       System.err.println("Local file doesn't exist");
