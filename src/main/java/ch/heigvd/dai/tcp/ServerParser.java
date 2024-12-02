@@ -139,8 +139,6 @@ public class ServerParser extends ConnectionParser {
   }
 
   private void get(Path path) throws IOException {
-    System.out.println("ServerParser.get()");
-
     Path full_path = workDir.resolve(path).normalize();
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
@@ -149,6 +147,11 @@ public class ServerParser extends ConnectionParser {
 
     if (!Files.isReadable(full_path)) {
       sendError(Errno.EACCES);
+      return;
+    }
+
+    if (Files.isDirectory(full_path)) {
+      sendError(Errno.EINVAL);
       return;
     }
 

@@ -24,7 +24,8 @@ public abstract class Service {
      */
     public static Action fromString(String input) throws IllegalArgumentException {
       for (Action action : Action.values()) {
-        System.out.println("action: " + action.name() + "(" + action.name().length() + ")");
+        // System.out.println("action: " + action.name() + "(" + action.name().length()
+        // + ")");
         if (action.name().equalsIgnoreCase(input)) {
           return action;
         }
