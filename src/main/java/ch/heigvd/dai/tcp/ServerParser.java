@@ -178,7 +178,6 @@ public class ServerParser extends ConnectionParser {
       while ((bytesRead = fin.read(buffer)) != -1) {
         out.write(buffer, 0, bytesRead);
       }
-      out.write(Server.EOT);
       out.flush();
       System.out.println("finished sending file");
     } catch (FileNotFoundException e) {
@@ -271,7 +270,7 @@ public class ServerParser extends ConnectionParser {
       System.out.println("in.available(): " + in.available());
 
       System.out.println("starting to read");
-      while (size > 0 && (bytesRead = in.read(buffer)) != -1) {
+      while (size > 0 && (bytesRead = in.read(buffer, 0, Math.min(size, buffer.length))) != -1) {
         fout.write(buffer, 0, bytesRead);
         size -= bytesRead;
         System.out.println("remaining size: " + size);

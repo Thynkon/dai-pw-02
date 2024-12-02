@@ -145,7 +145,7 @@ public class ClientParser extends ConnectionParser {
       byte[] buffer = new byte[4096];
       int bytesRead;
 
-      while (length > 0 && (bytesRead = in.read(buffer)) != -1) {
+      while (length > 0 && (bytesRead = in.read(buffer, 0, Math.min(length, buffer.length))) != -1) {
         fout.write(buffer, 0, bytesRead);
         length -= bytesRead;
         System.out.println("remaining size: " + length);
