@@ -289,9 +289,6 @@ public class ServerParser extends ConnectionParser {
     if (!file.createNewFile()) {
       sendError(Errno.EACCES);
 
-      // TODO: check if the implementation matches the protocol and fix whichever is
-      // simpler to fix
-
       // skip the file content
       in.skipBytes(size);
       return;
