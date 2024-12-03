@@ -1,6 +1,6 @@
 services:
   server:
-    image: dai-lab-02:latest
+    image: ghcr.io/thynkon/dai-pw-02:latest
     build: .
     ports:
       # exposing on localhost for security reasons (we don't have authentication)
@@ -12,7 +12,7 @@ services:
     command: "--mode server --connections ${MAX_CONNECTIONS:-2} --address 0.0.0.0 --work-dir /data"
 
   client:
-    image: dai-lab-02:latest
+    image: ghcr.io/thynkon/dai-pw-02:latest
     build: .
     depends_on:
       - server

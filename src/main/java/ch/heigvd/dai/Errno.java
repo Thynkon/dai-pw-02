@@ -1,5 +1,11 @@
 package ch.heigvd.dai;
 
+/**
+ * Errno constants from errno.h
+ *
+ * @see https://en.wikipedia.org/wiki/Errno.h
+ * @see https://man7.org/linux/man-pages/man3/errno.3.html
+ */
 public class Errno {
   public static final int EPERM = 1; // Operation not permitted
   public static final int ENOENT = 2; // No such file or directory

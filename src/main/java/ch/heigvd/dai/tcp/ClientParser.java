@@ -12,6 +12,13 @@ import ch.heigvd.dai.exceptions.ServerHasGoneException;
 public class ClientParser extends ConnectionParser {
   public final Path workDir;
 
+  /**
+   * ClientParser constructor
+   *
+   * @param in      the input stream
+   * @param out     the output stream
+   * @param workDir the working directory used to resolve the path of files
+   */
   public ClientParser(DataInputStream in, DataOutputStream out, Path workDir) {
     super(in, out);
     this.workDir = workDir;
@@ -22,6 +29,12 @@ public class ClientParser extends ConnectionParser {
     this.workDir = work_dir;
   }
 
+  /**
+   * Send a request to the server
+   * 
+   * @param command the command to send
+   * @throws IOException
+   */
   private void sendRequest(String command)
       throws IOException {
     System.out.println("Sending: " + Arrays.toString(command.trim().split(" ")));
@@ -36,6 +49,12 @@ public class ClientParser extends ConnectionParser {
     }
   }
 
+  /**
+   * Parse the status of the response
+   * 
+   * @return true if the status is 0, false otherwise
+   * @throws IOException
+   */
   private boolean parseStatus() throws IOException {
     int byteRead;
     StringBuilder buffer = new StringBuilder();
@@ -60,6 +79,12 @@ public class ClientParser extends ConnectionParser {
     return true;
   }
 
+  /**
+   * List the files in the server
+   * 
+   * @param path the path to list
+   * @throws IOException
+   */
   private void list(String path) throws IOException {
     String command = "LIST " + path + Server.NEW_LINE;
     sendRequest(command);
@@ -71,6 +96,7 @@ public class ClientParser extends ConnectionParser {
     StringBuilder result = new StringBuilder();
 
     int byteRead;
+    // read the response from the server (delimited by EOT)
     while ((byteRead = in.read()) != -1) {
       char c = (char) byteRead;
       if (c == Server.EOT) {
@@ -79,12 +105,20 @@ public class ClientParser extends ConnectionParser {
       result.append(c);
     }
 
+    // Print the result
     System.out.println("\nGot result: \n");
     Arrays.stream(result.toString().split(Server.DELIMITER)).forEach(s -> {
       System.out.println(s);
     });
   }
 
+  /**
+   * Download a file from the server
+   * 
+   * @param remote the remote path
+   * @param local  the local path
+   * @throws IOException
+   */
   private void get(Path remote, Path local) throws IOException {
     Path localFullPath = workDir.resolve(local).normalize();
 
@@ -113,8 +147,6 @@ public class ClientParser extends ConnectionParser {
       }
     }
 
-    System.out.println("ClientParser.get()->" + parentDir);
-
     int byteRead = 0;
     StringBuilder b = new StringBuilder();
 
@@ -136,7 +168,6 @@ public class ClientParser extends ConnectionParser {
       System.out.println("File created: " + localFullPath);
     }
 
-    // TODO: handle directory creation
     try (FileOutputStream fout = new FileOutputStream(localFullPath.toFile());) {
       System.out.println("Writing local file:");
 
@@ -147,16 +178,20 @@ public class ClientParser extends ConnectionParser {
       while (length > 0 && (bytesRead = in.read(buffer, 0, Math.min(length, buffer.length))) != -1) {
         fout.write(buffer, 0, bytesRead);
         length -= bytesRead;
-        System.out.println("remaining size: " + length);
       }
 
       fout.flush();
-      System.out.println("file written");
     } catch (FileNotFoundException e) {
       System.err.println("Unable to open file: " + e.getMessage() + ", path:" + localFullPath.toAbsolutePath());
     }
   }
 
+  /**
+   * Delete a file on the server
+   * 
+   * @param path the path to delete
+   * @throws IOException
+   */
   public void delete(String path) throws IOException {
     Path localFullPath = workDir.resolve(path).normalize();
     String command = "DELETE " + localFullPath + Server.NEW_LINE;
@@ -241,7 +276,6 @@ public class ClientParser extends ConnectionParser {
     if (tokens.length != expected_length) {
       Client.usage();
 
-      // TODO: replace with logging
       System.err.println("Invalid tokens: " + Arrays.toString(tokens));
       return false;
     }
@@ -249,6 +283,13 @@ public class ClientParser extends ConnectionParser {
     return true;
   }
 
+  /**
+   * Parse the tokens and execute the corresponding command
+   * 
+   * @param tokens the tokens to parse
+   * @throws IOException
+   * @throws ServerHasGoneException
+   */
   @Override
   public void parse(String[] tokens) throws IOException, ServerHasGoneException {
     super.parse(tokens);
@@ -293,7 +334,6 @@ public class ClientParser extends ConnectionParser {
         mkdir(tokens[1]);
       }
       default -> {
-        // TODO: replace with logging
         System.err.println("Received invalid tokens to parse: " + Arrays.toString(tokens));
       }
     }
