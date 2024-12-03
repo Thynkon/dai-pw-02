@@ -13,10 +13,6 @@ import ch.heigvd.dai.exceptions.ServerHasGoneException;
 public class Client extends Service {
   private static final int CLIENT_ID = (int) (Math.random() * 1000000);
 
-  // public Client() {
-  // this("localhost", 1234, Path.of("."));
-  // }
-
   public Client(String host, int port, Path work_dir) {
     this.address = host;
     this.port = port;
@@ -88,7 +84,7 @@ public class Client extends Service {
       }
       System.out.println("[Client] Closing connection and quitting...");
     } catch (IOException e) {
-      System.out.println("[Client] exception: " + e);
+      System.out.println("[Client] : " + e.getMessage());
     }
   }
 
