@@ -293,7 +293,8 @@ public class ServerParser extends ConnectionParser {
       try {
         Files.createDirectories(parentDir);
       } catch (IOException e) {
-        System.err.println("Failed to create directories for file: " + path);
+        Logger.debug("Failed to create directories for file: " + path);
+        sendError(Errno.EIO);
         return;
       }
     }
