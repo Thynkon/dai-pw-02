@@ -48,6 +48,7 @@ public class ServerParser extends ConnectionParser {
   /**
    * @brief Send a status code and flush the buffer
    * @param code the error number from {@link Errno}
+   * @throws IOException when unable to write to the socket output
    */
   private void sendCode(int code) throws IOException {
     byte[] data = (String.valueOf(code) + (char) Server.EOT).getBytes(StandardCharsets.UTF_8);
@@ -56,14 +57,28 @@ public class ServerParser extends ConnectionParser {
     out.flush();
   }
 
+  /**
+   * @brief Send an error code and flushes the socket
+   * @param errno the error number from {@link Errno}
+   * @throws IOException when unable to write to the socket output
+   */
   private void sendError(int errno) throws IOException {
     sendCode(errno);
   }
 
+  /**
+   * @brief Send a success code and flushes the socket
+   * @thworws IOException when unable to write to the socket output
+   */
   private void sendSucess() throws IOException {
     sendCode(0);
   }
 
+  /**
+   * @brief Send a message to the client using an internal buffer
+   * @param message the message to send
+   * @throws IOException when unable to write to the socket output
+   */
   private void sendMessage(String message) throws IOException {
     // Read the file in 4k blocks
     byte[] buffer = new byte[4096];
@@ -98,11 +113,13 @@ public class ServerParser extends ConnectionParser {
   /**
    * @brief Answer with the list items contained in the target path
    * @param path the path given by the client
+   * @throws IOException when unable to write to the socket output
    */
   private void list(Path path) throws IOException {
     StringBuilder sb = new StringBuilder();
     Path full_path = workDir.resolve(path).normalize();
 
+    // first, check if path verifies the conditions specified in the protocol
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
       return;
@@ -117,8 +134,10 @@ public class ServerParser extends ConnectionParser {
       sendError(Errno.EACCES);
     }
 
+    // Announce the client everything is fine
     sendSucess();
 
+    // Send the list of files/directories
     try (Stream<Path> paths = Files.list(full_path.toAbsolutePath())) {
       paths
           .forEach(p -> {
@@ -140,8 +159,15 @@ public class ServerParser extends ConnectionParser {
     sendMessage(sb.toString());
   }
 
+  /**
+   * @brief Answer with the content of the file at the given path
+   * @param path the path to the file
+   * @throws IOException when unable to write to the socket output
+   */
   private void get(Path path) throws IOException {
     Path full_path = workDir.resolve(path).normalize();
+
+    // first, check if path verifies the conditions specified in the protocol
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
       return;
@@ -153,7 +179,7 @@ public class ServerParser extends ConnectionParser {
     }
 
     if (Files.isDirectory(full_path)) {
-      sendError(Errno.EINVAL);
+      sendError(Errno.EISDIR);
       return;
     }
 
@@ -245,6 +271,14 @@ public class ServerParser extends ConnectionParser {
     sendSucess();
   }
 
+  /**
+   * Handles PUT request and its given path.
+   * 
+   * @param path to put
+   * @param size size of the file to put
+   * @param out  The output where the result will be sent
+   * @throws IOException when unable to write to the socket output
+   */
   private void put(Path path, int size) throws IOException {
 
     Path full_path = workDir.resolve(path).normalize();
@@ -254,9 +288,6 @@ public class ServerParser extends ConnectionParser {
     Logger.debug("creating file");
     if (!file.createNewFile()) {
       sendError(Errno.EACCES);
-
-      // TODO: check if the implementation matches the protocol and fix whichever is
-      // simpler to fix
 
       // skip the file content
       in.skipBytes(size);
@@ -291,6 +322,13 @@ public class ServerParser extends ConnectionParser {
     }
   }
 
+  /**
+   * Handles MKDIR request and its given path.
+   * 
+   * @param path to create
+   * @param out  The output where the result will be sent
+   * @throws IOException when unable to write to the socket output
+   */
   private void mkdir(Path path) throws IOException {
     Path full_path = workDir.resolve(path).normalize();
     File file = full_path.toFile();
@@ -330,6 +368,11 @@ public class ServerParser extends ConnectionParser {
     sendSucess();
   }
 
+  /**
+   * @brief Parse the tokens and execute the action
+   * @param tokens the tokens received from the client
+   * @throws IOException when unable to write to the socket output
+   */
   @Override
   public void parse(String[] tokens) throws IOException {
     super.parse(tokens);

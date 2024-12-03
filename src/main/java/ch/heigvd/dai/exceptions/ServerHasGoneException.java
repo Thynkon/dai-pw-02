@@ -2,6 +2,9 @@ package ch.heigvd.dai.exceptions;
 
 import java.io.IOException;
 
+/**
+ * This exception is thrown when the server is no longer available.
+ */
 public class ServerHasGoneException extends IOException {
 
   public ServerHasGoneException() {

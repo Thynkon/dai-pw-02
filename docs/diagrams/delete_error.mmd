@@ -1,14 +1,14 @@
+
 sequenceDiagram
     participant Client
     participant Server
 
     %% Initialisation
-    Note over Client,Server: LIST mydir/
+    Note over Client,Server: DELETE non_existing_file.txt
     Client->>Server: Establish connection
     Server<<-->>Client: Connection established
-    Client->>Server: LIST mydir/
-    Server--)Client: 0
-    Server--)Client: Your content
+    Client->>Server: DELETE non_existing_file.txt
+    Server--)Client: ENOENT
     Client->>Server: Close connection
     Server->>Server: Close connection
     Server<<-->>Client: Connection closed

@@ -6,7 +6,7 @@ compiled to pdf when pushed to the main branch
 To run locally, just compile the file using the typst compiler
 
 ```bash
-typst c proto.typ
+typst c protocol.typ
 ```
 
 Or use the preview extension in your favorite editor

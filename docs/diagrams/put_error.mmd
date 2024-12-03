@@ -3,12 +3,12 @@ sequenceDiagram
     participant Server
 
     %% Initialisation
-    Note over Client,Server: LIST mydir/
+    Note over Client,Server: PUT non_accessible_dir/myfile.txt 1024
     Client->>Server: Establish connection
     Server<<-->>Client: Connection established
-    Client->>Server: LIST mydir/
-    Server--)Client: 0
-    Server--)Client: Your content
+    Client->>Server: PUT non_accessible_dir/myfile 1024
+    Client->>Server: Fle content
+    Server--)Client: EACCESS
     Client->>Server: Close connection
     Server->>Server: Close connection
     Server<<-->>Client: Connection closed

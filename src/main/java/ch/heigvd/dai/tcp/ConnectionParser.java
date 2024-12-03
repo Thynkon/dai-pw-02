@@ -13,21 +13,43 @@ import java.io.*;
  * BufferedOutputStream which would have a buffer and share it.
  */
 public abstract class ConnectionParser implements AutoCloseable {
-  protected DataInputStream in;
-  protected DataOutputStream out;
-  boolean ownsData;
+  protected final DataInputStream in;
+  protected final DataOutputStream out;
+  final boolean ownsData;
 
+  /**
+   * ConnectionParser constructor with borrowed streams.
+   * 
+   * @implNote The streams won't be closed when this instance is destroyed since
+   *           they owned by the caller.
+   * @param in  the input stream
+   * @param out the ouptut stream
+   */
   public ConnectionParser(DataInputStream in, DataOutputStream out) {
     this.in = in;
     this.out = out;
+    this.ownsData = false;
   }
 
+  /**
+   * ConnectionParser constructor for owned streams.
+   * 
+   * @implNote The streams will be closed once this instance is destroyed.
+   * @param in  the input stream
+   * @param out the ouptut stream
+   */
   public ConnectionParser(InputStream in, OutputStream out) {
     this.in = new DataInputStream(in);
     this.out = new DataOutputStream(out);
     this.ownsData = true;
   }
 
+  /**
+   * Parse the arguments and handle accordingly
+   * 
+   * @throws IOException when there is no token to parse
+   * @param tokens to parse
+   */
   public void parse(String[] tokens) throws IOException {
     if (tokens.length < 1) {
       throw new IllegalArgumentException("Parsing requires at least one value");

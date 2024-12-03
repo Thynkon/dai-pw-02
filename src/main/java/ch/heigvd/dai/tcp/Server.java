@@ -16,14 +16,29 @@ public class Server extends Service {
   public static final String NEW_LINE = "\n";
   public static final int EOT = 0x04;
 
-  public Server(String address, int port, int number_of_connections, Path work_dir) throws UnknownHostException {
-    this.port = port;
+  /**
+   * Server constructor
+   *
+   * @throws UnknownHostException when the listening address cannot be resolved
+   * @throws NullPointerException when the working directory is null
+   * @param address               the address to listen on
+   * @param port                  the port to listen on
+   * @param number_of_connections the number of concurrent connections to handle
+   * @param work_dir              the working directory used when interracting
+   *                              with files and directories
+   */
+  public Server(String address, int port, int number_of_connections, Path work_dir)
+      throws UnknownHostException, NullPointerException {
+    super(port, address, work_dir);
     this.number_of_threads = number_of_connections;
-    this.address = address;
     this.iaddress = InetAddress.getByName(address);
-    this.work_dir = work_dir;
   }
 
+  /**
+   * Launch the server
+   * 
+   * @return void
+   */
   @Override
   public void launch() {
     int backlog = 50;
@@ -34,6 +49,7 @@ public class Server extends Service {
           Server.SERVER_ID);
       Logger.info("[Server " + Server.SERVER_ID + "] listening on port " + port);
 
+      // launch each new connection in a thread
       while (!serverSocket.isClosed()) {
         Socket clientSocket = serverSocket.accept();
         executor.submit(new ClientHandler(clientSocket, this));
@@ -43,6 +59,12 @@ public class Server extends Service {
     }
   }
 
+  /**
+   * @class ClientHandler
+   *        This class is responsible for handling the client connection. On each
+   *        new connection, a new instance
+   *        of this class is created and run in a separate thread.
+   */
   static class ClientHandler implements Runnable {
 
     private final Socket socket;
@@ -53,6 +75,11 @@ public class Server extends Service {
       this.server = server;
     }
 
+    /**
+     * Run the client handler
+     * This method is responsible for reading the client request and sending the
+     * response.
+     */
     @Override
     public void run() {
       try (socket; // This allow to use try-with-resources with the socket
@@ -68,6 +95,7 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
+        // Read the client request
         String buffer;
         StringBuilder sb = new StringBuilder();
         int c;

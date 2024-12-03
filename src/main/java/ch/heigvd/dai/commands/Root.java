@@ -3,6 +3,7 @@ package ch.heigvd.dai.commands;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import ch.heigvd.dai.tcp.Server;
@@ -17,6 +18,9 @@ public class Root implements Callable<Integer> {
   private static enum Mode {
     Client, Server
   };
+
+  private static final int SUCCESS = 0;
+  private static final int FAILURE = -1;
 
   @CommandLine.Option(names = { "-a",
       "--address" }, description = "The IP address to listen on when using server mode", defaultValue = "localhost")
@@ -45,28 +49,28 @@ public class Root implements Callable<Integer> {
     if (mode == Mode.Server) {
       if (work_dir == null) {
         Logger.error("The working directory must be specified on server mode!");
-        return -1;
+        return FAILURE;
       }
 
       if (!Files.exists(work_dir)) {
         Logger.error("Directory " + work_dir + " does not exist!");
-        return -1;
+        return FAILURE;
       }
 
       if (!Files.isDirectory(work_dir)) {
         Logger.error(work_dir + " is not a directory!");
-        return -1;
+        return FAILURE;
       }
 
       if (!Files.isWritable(work_dir)) {
         Logger.error("Cannot write in " + work_dir + "!");
-        return -1;
+        return FAILURE;
       }
 
       try {
         Server server = new Server(address, port, number_of_max_connections, work_dir);
         server.launch();
-        return 0;
+        return SUCCESS;
       } catch (UnknownHostException e) {
         Logger.error("Invalid host or DNS problem regarding address:" + address);
         return -1;
@@ -78,9 +82,12 @@ public class Root implements Callable<Integer> {
       }
     }
 
+    // Default to the current working directory when running in client mode
+    work_dir = Objects.requireNonNullElseGet(work_dir, () -> Path.of(""));
+
     Client client = new Client(address, port, work_dir);
     client.launch();
 
-    return 0;
+    return SUCCESS;
   }
 }

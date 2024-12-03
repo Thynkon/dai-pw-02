@@ -11,6 +11,7 @@
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
+        <li><a href="#get-the-source-code">Get the source code</a></li>
         <li><a href="#documentation-and-protocol">Documentation and protocol</a></li>
         <li>
           <a href="#prerequisites">Prerequisites</a>
@@ -29,6 +30,7 @@
               <a href="#with-docker">With docker</a>
               <ul>
                 <li><a href="#building-the-image">Building the image</a></li>
+                <li><a href="#publishing-the-docker-image">Publishing the Docker image</a></li>
                 <li>
                   <a href="#running-the-image">Running the image</a>
                   <ul>
@@ -36,9 +38,13 @@
                     <li><a href="#client">Client</a></li>
                   </ul>
                 </li>
+                <li><a href="#demo">Demo</a></li>
               </ul>
             </li>
           </ul>
+        </li>
+        <li>
+          <a href="#building-the-image">Building the Docker image</a>
         </li>
       </ul>
     </li>
@@ -64,7 +70,18 @@
 SimpFT is a simple file transfer application to upload and download files on a
 server.
 
+The client offers a `REPL` so you can type commands interactively. Options like the server address as well as the server port (on both server and client) can be specified.
+
 You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
+
+### Get the source code
+
+First of all, download the source code:
+
+```sh
+git clone https://github.com/Thynkon/dai-pw-02
+cd dai-pw-02
+```
 
 ### Documentation and protocol
 
@@ -119,20 +136,36 @@ To install and use docker, follow the [official documentation](https://docs.dock
 
 If you want to test the `Github actions` on your machine, you can use [act](https://github.com/nektos/act).
 
-Before you launch any workflow, make sure you have created a repository secret named `AUTH_TOKEN`.
+Before you launch any workflow, make sure you have created the following repository secrets:
+
+- `AUTH_TOKEN`
+- `DOCKER_USERNAME`
+- `DOCKER_PASSWORD`
 
 Then, create a file named `.secrets` which should contain the following:
 
 ```env
 AUTH_TOKEN=<YOUR_AUTH_TOKEN>
+DOCKER_USERNAME=<USERNAME>
+DOCKER_PASSWORD=<GITHUB_APPLICATION_TOKEN>
 ```
 
-Finally, launch the publish workflow (which publishes the mvn package to Github repository) with the following command:
+Finally, launch the publish workflow (which publishes the mvn package to Github registry) with the following command:
 
 ```sh
 act --secret-file .secrets
 ```
 
+We have created two jobs: one that publishes this app to the `Github`'s `Maven` registry and the other builds and pushes the Docker image into `Github`'s container registry.
+
+You can launch them using the following commands:
+
+```sh
+# Publish Docker image to Github repository
+act --secret-file .secrets -j build-and-push-image
+# Publish .jar to Github repository
+act --secret-file .secrets -j publish
+```
 
 The workflows automatically publish this project to the GitHub's `mvn` and `Docker` registries.
 
@@ -159,6 +192,7 @@ simply run the application like this:
 ```bash
 # Run as server
 java -jar simpft.jar --mode server --port 1234 --address localhost --connections 2 --root-dir /path/to/dir
+
 # Run client
 java -jar simpft.jar --mode client --port 1234 --address localhost
 ```
@@ -180,7 +214,7 @@ The same image can be used for the server and client.
 You can build the container by cloning the repository and using:
 
 ```bash
-docker build . -t dai-lab-02:latest
+docker build . -t dai-pw-02:latest
 ```
 
 Or with the [compose.yml][compose] file provided
@@ -196,13 +230,29 @@ parameters by providing the following environment variables.
 - SERVER_PORT: the port to map on the host (default: 1234)
 - MAX_CONNECTIONS: the number of connections to handle in parallel (default: 2)
 
+##### Publishing the Docker image
+
+Even though our Docker image is automatically built and publish to Github thanks
+to a custom `workflow`, you can publish it manually thanks to the following commands:
+
+```sh
+# Login to GitHub Container Registry
+docker login ghcr.io -u <username>
+
+# Tag the image with the correct format
+docker tag dai-pw-02 ghcr.io/<username>/dai-pw-02:latest
+
+# Publish the image on GitHub Container Registry
+docker push ghcr.io/<username>/dai-pw-02:latest
+```
+
 ##### Running the image
 
 The container simply runs the jar file with the provided arguments so the
 following lines do the same thing
 
 ```bash
-docker run --rm -v "./data:/data" dai-lab-02:latest --help
+docker run --rm -v "./data:/data" dai-pw-02:latest --help
 java -jar simpft-1.0.jar --help
 ```
 
@@ -214,7 +264,7 @@ You can run the server either manually using
 docker run --rm           \
   -p 127.0.0.1:1234:1234  \
   -v "./server-data:/data"\
-  dai-lab-02:latest       \
+  dai-pw-02:latest       \
   --mode server           \
   --address 0.0.0.0       \
   --root-dir /data        \
@@ -238,13 +288,81 @@ docker compose logs -f server
 When using the client, you should run the container manually.
 
 ```bash
-docker run --rm -v "./client-data:/data" dai-lab-02:latest --mode client -a <server-address>
+docker run --rm -v "./client-data:/data" dai-pw-02:latest --mode client -a <server-address>
 ```
 
 Or with the [compose.yml][compose]
 
 ```bash
 docker compose run client
+```
+
+##### Demo
+
+The demo is done using the `compose.yml` file at the root of the repository and
+the content of `client-data` and `server-data`. You can use the `--build` flag
+if you want to build the image yourself otherwise the `compose.yml` is already
+setup to pull the latest version from the [GitHub Container Registry](https://github.com/Thynkon/dai-pw-02/pkgs/container/dai-pw-02)
+
+> [!NOTE]
+> To properly check if the file content you need to have another terminal open or
+> use a multiplexer such as [zellij](https://zellij.dev) or [tmux](https://github.com/tmux/tmux)
+
+```sh
+# Start the server
+docker compose up -d server
+
+# Display the server logs (on another terminal)
+docker compose logs -f server
+
+# Start the client interactively
+docker compose run --rm client
+
+# Now, both the client and server should show that the connection was established
+# and the client shows the '>' symbol to indicate that it is waiting for user input.
+# each line that starts with '>' here is a command that's sent through the client.
+
+# List the content of the current working directory on the remote
+> list .
+
+# Check that it corresponds to the content of server-data
+ls ./server-data
+
+# Upload a text file
+> put local_dir/hello_world.txt ./
+
+# Check that the file was uploaded correctly
+diff -s client-data/local_dir/hello_world.txt server-data/hello_world.txt
+
+# Upload a binary file
+> put thynkon.jpg ./image.jpg
+
+# Check that the file was uploaded correctly
+diff -s client-data/thynkon.jpg server-data/image.jpg
+
+# Download a text file from the server
+> get some_remote_file.txt remote.txt
+
+# Check that the file was downloaded correctly
+diff -s client-data/remote.txt server-data/some_remote_file.txt
+
+# Download a binary file from the server
+> get remote_dir/mon.png local_dir/image.png
+
+# Check that the file was downloaded correctly
+diff -s client-data/local_dir/image.png server-data/remote_dir/mon.png
+
+# Remove a file on the remote
+> delete image.jpg
+
+# Check that the file is actually removed
+ls server-data
+
+# Close the connection (You can also use Ctrl+d)
+> exit
+
+# Stop the server
+docker compose down server
 ```
 
 <!-- CONTRIBUTING -->

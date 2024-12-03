@@ -31,11 +31,6 @@
 
 = SimpFTP
 
-#task[
-  add context
-]
-
-
 == Section 1 - Overview
 
 The SimpFTP (Simple File Transfer Protocol) is a communication protocol that
@@ -50,8 +45,8 @@ Thee protocol has three kinds of messages:
 
 - `Actions` which are encoded in UTF-8 and use the following pattern
   `<ACTION> <ARG>\n` where `\n` is used as a delimiter.
-- `Statuses` which are encoded in UTF-8 and use the following pattern `<CODE> \n`
-  where `\n` is used as a delimiter
+- `Statuses` which are encoded in UTF-8 and use the following pattern `<CODE><EOT>`
+  where `EOT` (`0x04` character in ASCII table) is used as a delimiter
 - `Datas` which is the binary content of a transferred file delimited by an end of
   transmission character `EOT`.
 
@@ -81,7 +76,7 @@ indicate success.
 When an invalid message is received, the server should answer with `ENOTSUP`.
 
 When the status represents an error, the server terminates the connection by
-sending `<CODE>\4` where `\4` is the `EOT` (End Of Transmission) character.
+sending `<CODE>\x04` asfsfd `\x04` is the `EOT` (End Of Transmission) character.
 
 == Section 3 - Messages
 
@@ -125,6 +120,9 @@ On error, only the error code is sent. `<CODE>` matches one of:
 - `EACCES`
 - `ENOENT`
 - `ENOTDIR`
+- `EINVAL`
+
+#pagebreak()
 
 === GET
 
@@ -138,11 +136,10 @@ to list its contents to fetch the name of the files and then download them.
 ==== Request
 
 ```txt
-GET <REMOTE_PATH> <LOCAL_PATH>
+GET <REMOTE_PATH>
 ```
 
 - `REMOTE_PATH`: The path of the file to be downloaded
-- `LOCAL_PATH`: The path where the downloaded content should be stored.
 
 
 ==== Response
@@ -160,13 +157,15 @@ GET <REMOTE_PATH> <LOCAL_PATH>
 ```
 
 On a successful request, the server answers with the code `0`, followed by the size (a non-negative integer value) of the file as well as its
-content in binary form.
+content in binary form. All the 3 connections are delimited by the `EOT` character.
 
 On error, only the error code is sent. `<CODE>` matches one of:
 - `EACCES`
 - `ENOENT`
 - `EISDIR`
+- `EINVAL`
 
+#pagebreak()
 
 === PUT
 
@@ -189,6 +188,8 @@ should be included.
 If the path doesn't end with a `/`, the rest of the request contains the file
 content in binary.
 
+#warning()[Notice that the file is sent in two requests, the first one to create the file and the second one to send its content.]
+
 ==== Response
 
 ```txt
@@ -203,7 +204,9 @@ On error, only the error code is sent. `<CODE>` matches one of:
 - `EFBIG`
 - `EISDIR`
 - `ENOENT`
+- `EINVAL`
 
+#pagebreak()
 === DELETE
 
 The client sends a delete request to the server to delete a file.
@@ -232,29 +235,59 @@ On error, only the error code is sent. `<CODE>` matches one of:
 - `ENOENT`
 - `EINVAL`
 
+#pagebreak()
+
 == Section 4 - Examples
 
 === LIST
 
-#align(center,[
-  #image("./diagrams/list.svg" )
+
+#grid(
+  columns: (auto, auto),
+  gutter: 20pt,
+  [
+==== OK
+#image("./diagrams/img/list.png", width: 100%)
+],[
+==== ERROR
+#image("./diagrams/img/list_error.png", width: 100%)
 ])
 
 === GET
 
-#align(center,[
-  #image("./diagrams/get.svg" )
+#grid(
+  columns: (auto, auto),
+  gutter: 20pt,
+  [
+==== OK
+#image("./diagrams/img/get.png", width: 100%)
+],[
+==== ERROR
+#image("./diagrams/img/get_error.png", width: 100% )
 ])
 
 === PUT
 
-#align(center,[
-  #image("./diagrams/put.svg" )
+#grid(
+  columns: (auto, auto),
+  gutter: 20pt,
+  [
+==== OK
+  #image("./diagrams/img/put.png", width: 100% )
+],[
+==== ERROR
+  #image("./diagrams/img/put_error.png", width: 100% )
 ])
+
 
 === DELETE
-
-#align(center,[
-  #image("./diagrams/delete.svg" )
+#grid(
+  columns: (auto, auto),
+  gutter: 20pt,
+  [
+==== OK
+#image("./diagrams/img/delete.png", width: 100%)
+],[
+==== ERROR
+#image("./diagrams/img/delete_error.png", width: 100%)
 ])
-
