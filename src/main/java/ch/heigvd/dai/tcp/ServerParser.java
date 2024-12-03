@@ -177,7 +177,7 @@ public class ServerParser extends ConnectionParser {
     }
 
     if (Files.isDirectory(full_path)) {
-      sendError(Errno.EINVAL);
+      sendError(Errno.EISDIR);
       return;
     }
 

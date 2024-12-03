@@ -3,12 +3,11 @@ sequenceDiagram
     participant Server
 
     %% Initialisation
-    Note over Client,Server: LIST mydir/
+    Note over Client,Server: LIST myfile
     Client->>Server: Establish connection
     Server<<-->>Client: Connection established
-    Client->>Server: LIST mydir/
-    Server--)Client: 0
-    Server--)Client: Your content
+    Client->>Server: LIST myfile
+    Server--)Client: ENOTDIR
     Client->>Server: Close connection
     Server->>Server: Close connection
     Server<<-->>Client: Connection closed
