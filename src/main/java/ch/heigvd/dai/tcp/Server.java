@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.tinylog.Logger;
+
 public class Server extends Service {
   private static final int SERVER_ID = (int) (Math.random() * 1000000);
   private final int number_of_threads;
@@ -43,9 +45,9 @@ public class Server extends Service {
 
     try (ServerSocket serverSocket = new ServerSocket(port, backlog, iaddress);
         ExecutorService executor = Executors.newFixedThreadPool(number_of_threads);) {
-      System.out.println("[Server " + Server.SERVER_ID + "] starting with id " +
+      Logger.info("[Server " + Server.SERVER_ID + "] starting with id " +
           Server.SERVER_ID);
-      System.out.println("[Server " + Server.SERVER_ID + "] listening on port " + port);
+      Logger.info("[Server " + Server.SERVER_ID + "] listening on port " + port);
 
       // launch each new connection in a thread
       while (!serverSocket.isClosed()) {
@@ -53,7 +55,7 @@ public class Server extends Service {
         executor.submit(new ClientHandler(clientSocket, this));
       }
     } catch (IOException e) {
-      System.out.println("[Server " + Server.SERVER_ID + "] exception: " + e);
+      Logger.error("[Server " + Server.SERVER_ID + "] exception: " + e);
     }
   }
 
@@ -85,7 +87,7 @@ public class Server extends Service {
           DataOutputStream out = new DataOutputStream(socket.getOutputStream());
           ServerParser parser = new ServerParser(in, out, server.work_dir);) {
 
-        System.out.println(
+        Logger.info(
             "[Server "
                 + SERVER_ID
                 + "] new client connected from "
@@ -102,19 +104,15 @@ public class Server extends Service {
             sb.append((char) c);
             continue;
           }
-          System.out.println("Server.ClientHandler.run(), in.available() = " + in.available());
-          // clean the buffer after fetching the COMMAND
+          Logger.debug("Server.ClientHandler.run(), in.available() = " + in.available());
           buffer = sb.toString();
           sb.setLength(0);
           String[] tokens = buffer.split(" ");
 
           if (tokens.length == 0) {
-            System.err.println("no action!");
+            Logger.error("no action!");
             continue; // Skip to the next request
           }
-
-          System.out
-              .println("Server.ClientHandler.run(), tokens[0] = '" + tokens[0] + "', length: " + tokens[0].length());
 
           if (buffer.toLowerCase().contains("exit")) {
             break;
@@ -123,15 +121,14 @@ public class Server extends Service {
           try {
             parser.parse(tokens);
             out.flush(); // Ensure the response is sent immediately
-            System.out.println("");
           } catch (IOException e) {
-            System.err.println("Got exception while parsing tokens: " + e.getMessage());
+            Logger.error("Got exception while parsing tokens: " + e.getMessage());
           }
         }
 
-        System.out.println("[Server " + SERVER_ID + "] closing connection");
+        Logger.info("[Server " + SERVER_ID + "] closing connection");
       } catch (IOException e) {
-        System.out.println("[Server " + SERVER_ID + "] exception: " + e);
+        Logger.info("[Server " + SERVER_ID + "] exception: " + e);
       }
     }
   }

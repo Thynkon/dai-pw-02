@@ -1,6 +1,5 @@
 package ch.heigvd.dai.commands;
 
-import java.io.File;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +9,9 @@ import java.util.concurrent.Callable;
 import ch.heigvd.dai.tcp.Server;
 import ch.heigvd.dai.tcp.Client;
 import picocli.CommandLine;
-import picocli.CommandLine.ExitCode;
+import picocli.CommandLine.Command;
+
+import org.tinylog.Logger;
 
 @CommandLine.Command(description = "A small CLI that compresses and deflates files.", version = "1.0.0", scope = CommandLine.ScopeType.INHERIT, mixinStandardHelpOptions = true)
 public class Root implements Callable<Integer> {
@@ -41,25 +42,28 @@ public class Root implements Callable<Integer> {
       "--work-dir" }, description = "The directory containing all the files. It is a base directory where every manipulation of files will happen.")
   protected Path work_dir;
 
+  @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display this help message")
+  boolean usageHelpRequested;
+
   public Integer call() {
     if (mode == Mode.Server) {
       if (work_dir == null) {
-        System.err.println("The working directory must be specified on server mode!");
+        Logger.error("The working directory must be specified on server mode!");
         return FAILURE;
       }
 
       if (!Files.exists(work_dir)) {
-        System.err.println("Directory " + work_dir + " does not exist!");
+        Logger.error("Directory " + work_dir + " does not exist!");
         return FAILURE;
       }
 
       if (!Files.isDirectory(work_dir)) {
-        System.err.println(work_dir + " is not a directory!");
+        Logger.error(work_dir + " is not a directory!");
         return FAILURE;
       }
 
       if (!Files.isWritable(work_dir)) {
-        System.err.println("Cannot write in " + work_dir + "!");
+        Logger.error("Cannot write in " + work_dir + "!");
         return FAILURE;
       }
 
@@ -68,8 +72,13 @@ public class Root implements Callable<Integer> {
         server.launch();
         return SUCCESS;
       } catch (UnknownHostException e) {
-        System.err.println("Invalid host or DNS problem regarding address:" + address);
-        return FAILURE;
+        Logger.error("Invalid host or DNS problem regarding address:" + address);
+        return -1;
+      }
+    } else {
+      if (usageHelpRequested) {
+        Client.usage();
+        return 0;
       }
     }
 

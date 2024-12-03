@@ -3,6 +3,7 @@ package ch.heigvd.dai.tcp;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
+import org.tinylog.Logger;
 
 public abstract class Service {
   protected final int port;
@@ -46,8 +47,8 @@ public abstract class Service {
           return action;
         }
       }
-      System.out.println("actual: " + input + "(" + input.length() + ")");
-      System.err.println(input + " not in list " + Arrays.toString(Action.values()));
+      Logger.debug("actual: " + input + "(" + input.length() + ")");
+      Logger.error(input + " not in list " + Arrays.toString(Action.values()));
       throw new IllegalArgumentException();
     }
   }

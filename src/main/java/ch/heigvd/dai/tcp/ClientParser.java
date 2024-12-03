@@ -148,8 +148,6 @@ public class ClientParser extends ConnectionParser {
       }
     }
 
-    System.out.println("ClientParser.get()->" + parentDir);
-
     int byteRead = 0;
     StringBuilder b = new StringBuilder();
 
@@ -171,7 +169,6 @@ public class ClientParser extends ConnectionParser {
       System.out.println("File created: " + localFullPath);
     }
 
-    // TODO: handle directory creation
     try (FileOutputStream fout = new FileOutputStream(localFullPath.toFile());) {
       System.out.println("Writing local file:");
 
@@ -182,11 +179,9 @@ public class ClientParser extends ConnectionParser {
       while (length > 0 && (bytesRead = in.read(buffer, 0, Math.min(length, buffer.length))) != -1) {
         fout.write(buffer, 0, bytesRead);
         length -= bytesRead;
-        System.out.println("remaining size: " + length);
       }
 
       fout.flush();
-      System.out.println("file written");
     } catch (FileNotFoundException e) {
       System.err.println("Unable to open file: " + e.getMessage() + ", path:" + localFullPath.toAbsolutePath());
     }
@@ -282,7 +277,6 @@ public class ClientParser extends ConnectionParser {
     if (tokens.length != expected_length) {
       Client.usage();
 
-      // TODO: replace with logging
       System.err.println("Invalid tokens: " + Arrays.toString(tokens));
       return false;
     }
@@ -341,7 +335,6 @@ public class ClientParser extends ConnectionParser {
         mkdir(tokens[1]);
       }
       default -> {
-        // TODO: replace with logging
         System.err.println("Received invalid tokens to parse: " + Arrays.toString(tokens));
       }
     }
