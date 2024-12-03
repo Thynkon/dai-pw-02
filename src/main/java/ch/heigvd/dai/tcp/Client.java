@@ -38,6 +38,11 @@ public class Client extends Service {
     System.out.println("\tDELETE <path_to_file>\n");
   }
 
+  /**
+   * Launch the client
+   * 
+   * @return void
+   */
   @Override
   public void launch() {
     System.out.println("[Client " + CLIENT_ID + "] connecting to " + address + ":" + port);
@@ -64,6 +69,7 @@ public class Client extends Service {
         }
 
         try {
+          // parse each token
           String[] tokens = buffer.trim().split(" ");
           if (buffer.toLowerCase().contains("exit")) {
             socket.close();

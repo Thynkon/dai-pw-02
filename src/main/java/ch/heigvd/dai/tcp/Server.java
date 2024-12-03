@@ -32,6 +32,11 @@ public class Server extends Service {
     this.iaddress = InetAddress.getByName(address);
   }
 
+  /**
+   * Launch the server
+   * 
+   * @return void
+   */
   @Override
   public void launch() {
     int backlog = 50;
@@ -42,6 +47,7 @@ public class Server extends Service {
           Server.SERVER_ID);
       System.out.println("[Server " + Server.SERVER_ID + "] listening on port " + port);
 
+      // launch each new connection in a thread
       while (!serverSocket.isClosed()) {
         Socket clientSocket = serverSocket.accept();
         executor.submit(new ClientHandler(clientSocket, this));
@@ -51,6 +57,12 @@ public class Server extends Service {
     }
   }
 
+  /**
+   * @class ClientHandler
+   *        This class is responsible for handling the client connection. On each
+   *        new connection, a new instance
+   *        of this class is created and run in a separate thread.
+   */
   static class ClientHandler implements Runnable {
 
     private final Socket socket;
@@ -61,6 +73,11 @@ public class Server extends Service {
       this.server = server;
     }
 
+    /**
+     * Run the client handler
+     * This method is responsible for reading the client request and sending the
+     * response.
+     */
     @Override
     public void run() {
       try (socket; // This allow to use try-with-resources with the socket
@@ -76,6 +93,7 @@ public class Server extends Service {
                 + ":"
                 + socket.getPort());
 
+        // Read the client request
         String buffer;
         StringBuilder sb = new StringBuilder();
         int c;
@@ -85,6 +103,7 @@ public class Server extends Service {
             continue;
           }
           System.out.println("Server.ClientHandler.run(), in.available() = " + in.available());
+          // clean the buffer after fetching the COMMAND
           buffer = sb.toString();
           sb.setLength(0);
           String[] tokens = buffer.split(" ");
