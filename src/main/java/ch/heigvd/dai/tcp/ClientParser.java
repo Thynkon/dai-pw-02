@@ -215,6 +215,12 @@ public class ClientParser extends ConnectionParser {
       return;
     }
 
+    // check if localPath size is valid
+    if (file.length() > Server.max_upload_size) {
+      System.err.println("File too big");
+      return;
+    }
+
     if (remotePath.endsWith("/")) {
       remotePath += file.getName();
     }

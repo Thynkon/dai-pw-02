@@ -78,6 +78,8 @@ When an invalid message is received, the server should answer with `ENOTSUP`.
 When the status represents an error, the server terminates the connection by
 sending `<CODE>\x04` asfsfd `\x04` is the `EOT` (End Of Transmission) character.
 
+#pagebreak()
+
 == Section 3 - Messages
 
 Even though you will find in the examples bellow the name of the actions in uppercase, the server accepts them in any form (upper, lower, mix of both, etc...).
@@ -97,7 +99,7 @@ folders at the specified path.
 ==== Request
 
 ```txt
-LIST <PATH>
+LIST <REMOTE_PATH>
 ```
 
 If the path is empty, the working directory of the server will be used.
@@ -165,21 +167,28 @@ On error, only the error code is sent. `<CODE>` matches one of:
 - `EISDIR`
 - `EINVAL`
 
+
 #pagebreak()
 
 === PUT
 
 The client sends a put request to the server to upload a file or create a directory.
 
+#warning()[The size of the files to be uploaded is limited to 500MB.]
+
 ==== Request
 
 ```txt
-PUT <PATH> <FILE_SIZE>
+PUT <LOCAL_PATH> <FILE_SIZE>
 ```
+
+- `REMOTE_PATH`: The path of the file to be uploaded
+- `FILE_SIZE`: The path of the file to be uploaded
 
 The first part of the request provides the path to the file or directory on the
 server. A trailing `/` indicates that a directory should be created and no size
-should be included.
+should be included. The server reuses the path provided by the client to create
+it.
 
 ```bin
 <DATA>
@@ -206,6 +215,8 @@ On error, only the error code is sent. `<CODE>` matches one of:
 - `ENOENT`
 - `EINVAL`
 
+#warning()[If the `<REMOTE_PATH>` contains directories that do not exist, the server creates them recursively.]
+
 #pagebreak()
 === DELETE
 
@@ -214,12 +225,10 @@ The client sends a delete request to the server to delete a file.
 ==== Request
 
 ```txt
-DELETE <PATH>
+DELETE <REMOTE_PATH>
 ```
 
-Where path is the path to the file or directory to delete.
-
-If the path points to a directory, the whole directory is removed recursively.
+- `REMOTE_PATH`: The path of the file or directory to delete. If the path points to a directory, the whole directory is removed recursively.
 
 ==== Response
 
