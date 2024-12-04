@@ -41,8 +41,14 @@ public class ClientParser extends ConnectionParser {
       throws IOException {
     System.out.println("Sending: " + Arrays.toString(command.trim().split(" ")));
     byte[] message = command.getBytes(StandardCharsets.UTF_8);
-    out.write(message);
-    out.flush();
+
+    try {
+      out.write(message);
+      out.flush();
+    } catch (IOException e) {
+      System.err.println("Failed to communicate with the server. It may have gone offline.");
+      throw new ServerHasGoneException();
+    }
   }
 
   /**
