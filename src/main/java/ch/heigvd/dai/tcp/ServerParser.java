@@ -290,7 +290,19 @@ public class ServerParser extends ConnectionParser {
       return;
     }
 
-    System.out.println("expected size: " + size);
+    // create parent directories if needed
+    Path parentDir = full_path.getParent();
+    // if user only specifier filename like: myfile.java instread of
+    // mydir/myfile.java
+    if (!parentDir.equals(workDir.toAbsolutePath())) {
+      try {
+        Files.createDirectories(parentDir);
+      } catch (IOException e) {
+        Logger.debug("Failed to create directories for file: " + path);
+        sendError(Errno.EIO);
+        return;
+      }
+    }
 
     Logger.debug("creating file");
     if (!file.createNewFile()) {

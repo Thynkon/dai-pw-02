@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import org.tinylog.Logger;
+
 import ch.heigvd.dai.Errno;
 import ch.heigvd.dai.exceptions.ServerHasGoneException;
 
@@ -39,8 +41,14 @@ public class ClientParser extends ConnectionParser {
       throws IOException {
     System.out.println("Sending: " + Arrays.toString(command.trim().split(" ")));
     byte[] message = command.getBytes(StandardCharsets.UTF_8);
-    out.write(message);
-    out.flush();
+
+    try {
+      out.write(message);
+      out.flush();
+    } catch (IOException e) {
+      System.err.println("Failed to communicate with the server. It may have gone offline.");
+      throw new ServerHasGoneException();
+    }
   }
 
   /**
@@ -115,6 +123,10 @@ public class ClientParser extends ConnectionParser {
    */
   private void get(Path remote, Path local) throws IOException {
     Path localFullPath = workDir.resolve(local).normalize();
+
+    if (localFullPath.toFile().isDirectory()) {
+      localFullPath = localFullPath.resolve(remote.getFileName());
+    }
 
     if (Files.exists(localFullPath)) {
       System.err.println(localFullPath + " already exists!");

@@ -103,7 +103,7 @@ public class Client extends Service {
       }
       System.out.println("[Client] Closing connection and quitting...");
     } catch (IOException e) {
-      System.out.println("[Client] exception: " + e);
+      System.out.println("[Client] : " + e.getMessage());
     }
   }
 
