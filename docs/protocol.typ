@@ -108,9 +108,11 @@ and they are used as a standard in multiple programming languages.
   ),
   [], [`0`], [OK],
   [`EACCES`], [`13`], [Permission denied],
+  [`EFBIG`], [`27`], [File too large],
+  [`EINVAL`], [`22`], [Invalid argument],
+  [`EISDIR`], [`21`], [Is a directory],
   [`ENOENT`], [`2`], [No such file or directory],
   [`ENOTDIR`], [`20`], [Not a directory],
-  [`EINVAL`], [`22`], [Invalid argument],
 )
 
 #pagebreak()
@@ -144,11 +146,9 @@ appended to them.
 
 On error, only the error code is sent. `<CODE>` matches one of:
 - `EACCES`
-- `EFBIG`
-- `EINVAL`
-- `EISDIR`
 - `ENOENT`
 - `ENOTDIR`
+- `EINVAL`
 
 #pagebreak()
 
