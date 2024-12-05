@@ -330,6 +330,12 @@ public class ServerParser extends ConnectionParser {
     File file = full_path.toFile();
     Logger.debug("expected size: " + size);
 
+    // check if the file size is within the limits
+    if (size > Server.max_upload_size) {
+      sendError(Errno.EFBIG);
+      return;
+    }
+
     // create parent directories if needed
     Path parentDir = full_path.getParent();
     // if user only specifier filename like: myfile.java instread of
