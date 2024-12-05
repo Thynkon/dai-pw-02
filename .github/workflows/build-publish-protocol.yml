@@ -22,7 +22,6 @@ jobs:
         with:
           name: PDF
           path: docs/protocol.pdf
-
       - name: Get current date
         id: date
         run: echo "DATE=$(date +%Y-%m-%d-%H:%M)" >> $GITHUB_ENV
