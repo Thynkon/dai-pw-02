@@ -62,12 +62,12 @@ A simple file transfer application written in JAVA
 <div class="flex items-center justify-between">
   <div>
     <ul>
-      <li>Compression / Extraction</li>
-      <li>tar files</li>
-      <li>LZW</li>
-      <li>RLE</li>
-      <li>Docker</li>
+      <li>Upload and download files on a server</li>
+      <li>Multiple clients in concurrency</li>
+      <li>Docker image on the GitHub Container Registry</li>
+      <li>Maven package on the GitHub Package Registry</li>
       <li>Automatic builds using Github Actions</li>
+      <li>Automatic protocol documentation compilation</li>
     </ul>
   </div>
   <div class="flex flex-col space-y-10">
@@ -79,7 +79,13 @@ A simple file transfer application written in JAVA
 
 ---
 
+# Protocol
+
+---
+
 # Compression algorithms
+
+<!-- TODO: Remove this slide -->
 
 <div class="flex items-stretch justify-between">
   <div class="basis-1/2 h-full">
@@ -115,27 +121,25 @@ A simple file transfer application written in JAVA
     <span class="text-lg">
       Docker
     </span>
-```dockerfile
-FROM eclipse-temurin:21-jdk AS builder
-WORKDIR /app
-# Download build dependencies
-COPY mvnw pom.xml dependency-reduced-pom.xml ./
-COPY .mvn ./.mvn
-RUN chmod +x ./mvnw && ./mvnw install
-# Copy project and build
-COPY src ./src
-RUN ./mvnw package
-FROM eclipse-temurin:21-jre AS prod
-WORKDIR /app
-COPY --from=builder /app/target/dai-lab-01-1.0.jar /app/app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
-CMD ["--help"]
+
+```bash
+docker run --rm                   \
+  -p 127.0.0.1:1234:1234          \
+  -v "./server-data:/data"        \
+  ghcr.io/thynkon/dai-pw-02:latest\
+  --mode server                   \
+  --address 0.0.0.0               \
+  --root-dir /data                \
+  --connections 2
 ```
 
 ```bash
-docker build -t compress-tool .
-docker run --rm -v ".:/data" compress-tool:latest \
-  -c -a RLE -o /data/output.tar.rle /data/input
+docker run --rm                   \
+  -v "./client-data:/data"        \
+  ghcr.io/thynkon/dai-pw-02:latest\
+  --mode client                   \
+  --address host.docker.internal  \
+  --root-dir /data                \
 ```
 
   </div>
@@ -143,36 +147,10 @@ docker run --rm -v ".:/data" compress-tool:latest \
     <span class="text-lg">
       Github actions
     </span>
-```yaml
-name: Publish package to GitHub Packages
-on:
-  release:
-    types: [created]
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: "21"
-          distribution: "temurin"
-      - name: Publish package
-        run: ./mvnw deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
-```
+    <img src="/assets/github-workflows.png" alt="github workflows configurations" width="300"/>
   </div>
 </div>
 
 ---
 
 # What could be improved
-
-- Handle binary files
-- CI/CD pipeline
-- Implement commands to modify archive file - update or delete tar entries
-- Publication on the maven repository
