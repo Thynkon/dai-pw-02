@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,6 +18,7 @@ import org.tinylog.Logger;
 
 public class ServerParser extends ConnectionParser {
   public final Path workDir;
+  private static final ConcurrentHashMap<Path, ReentrantLock> fileLocks = new ConcurrentHashMap<>();
 
   /**
    * @brief ServerParser constructor where the streams are owned by the caller
@@ -43,6 +46,29 @@ public class ServerParser extends ConnectionParser {
   public ServerParser(InputStream in, OutputStream out, Path workDir) {
     super(in, out);
     this.workDir = workDir;
+  }
+
+  // Function to fetch or create the lock for the given file
+  // private ReentrantLock getLockForFile(String filename) {
+  // // Compute and fetch the lock for the file, creating it if necessary
+  // return fileLocks.computeIfAbsent(filename, k -> new ReentrantLock());
+  // }
+  private ReentrantLock getLockForFile(Path filename) {
+    return fileLocks.computeIfAbsent(filename, k -> new ReentrantLock());
+  }
+
+  // Function to lock the file (if not already locked)
+  private void lockFile(Path filename) {
+    ReentrantLock lock = getLockForFile(filename);
+    lock.lock();
+    Logger.debug("Lock acquired for file: " + filename);
+  }
+
+  // Function to unlock the file
+  private void unlockFile(Path filename) {
+    ReentrantLock lock = getLockForFile(filename);
+    lock.unlock();
+    Logger.debug("Lock released for file: " + filename);
   }
 
   /**
@@ -118,20 +144,26 @@ public class ServerParser extends ConnectionParser {
   private void list(Path path) throws IOException {
     StringBuilder sb = new StringBuilder();
     Path full_path = workDir.resolve(path).normalize();
+    lockFile(full_path);
+    Logger.debug("locked file: " + full_path.toString());
 
     // first, check if path verifies the conditions specified in the protocol
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
 
     if (!Files.isDirectory(full_path)) {
       sendError(Errno.ENOTDIR);
+      unlockFile(full_path);
       return;
     }
 
     if (!Files.isReadable(full_path)) {
       sendError(Errno.EACCES);
+      unlockFile(full_path);
+      return;
     }
 
     // Announce the client everything is fine
@@ -157,6 +189,7 @@ public class ServerParser extends ConnectionParser {
     }
 
     sendMessage(sb.toString());
+    unlockFile(full_path);
   }
 
   /**
@@ -167,25 +200,30 @@ public class ServerParser extends ConnectionParser {
   private void get(Path path) throws IOException {
     Path full_path = workDir.resolve(path).normalize();
 
+    lockFile(full_path);
     // first, check if path verifies the conditions specified in the protocol
     if (!Files.exists(full_path)) {
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
 
     if (!Files.isReadable(full_path)) {
       sendError(Errno.EACCES);
+      unlockFile(full_path);
       return;
     }
 
     if (Files.isDirectory(full_path)) {
       sendError(Errno.EISDIR);
+      unlockFile(full_path);
       return;
     }
 
     if (Files.size(full_path) == 0) {
       sendSucess();
       sendMessage("");
+      unlockFile(full_path);
       return;
     }
 
@@ -212,8 +250,11 @@ public class ServerParser extends ConnectionParser {
       // Shouldn't ever happen
       Logger.error("Cannot open file to write");
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
+
+    unlockFile(full_path);
   }
 
   /**
@@ -226,15 +267,18 @@ public class ServerParser extends ConnectionParser {
   private void delete(Path path) throws IOException {
 
     Path full_path = workDir.resolve(path).normalize();
+    lockFile(full_path);
     File file = full_path.toFile();
 
     if (!file.exists()) {
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
 
     if (!file.getParentFile().canWrite()) {
       sendError(Errno.EACCES);
+      unlockFile(full_path);
       return;
     }
 
@@ -269,6 +313,7 @@ public class ServerParser extends ConnectionParser {
     }
 
     sendSucess();
+    unlockFile(full_path);
   }
 
   /**
@@ -281,6 +326,7 @@ public class ServerParser extends ConnectionParser {
    */
   private void put(Path path, int size) throws IOException {
     Path full_path = workDir.resolve(path).normalize();
+    lockFile(full_path);
     File file = full_path.toFile();
     Logger.debug("expected size: " + size);
 
@@ -300,6 +346,7 @@ public class ServerParser extends ConnectionParser {
       } catch (IOException e) {
         Logger.debug("Failed to create directories for file: " + path);
         sendError(Errno.EIO);
+        unlockFile(full_path);
         return;
       }
     }
@@ -310,6 +357,7 @@ public class ServerParser extends ConnectionParser {
 
       // skip the file content
       in.skipBytes(size);
+      unlockFile(full_path);
       return;
     }
     Logger.debug("created file");
@@ -337,8 +385,11 @@ public class ServerParser extends ConnectionParser {
       // Shouldn't ever happen
       Logger.error("Cannot open file to write");
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
+
+    unlockFile(full_path);
   }
 
   /**
@@ -350,10 +401,13 @@ public class ServerParser extends ConnectionParser {
    */
   private void mkdir(Path path) throws IOException {
     Path full_path = workDir.resolve(path).normalize();
+    lockFile(full_path);
+
     File file = full_path.toFile();
     if (file.exists()) {
       Logger.error("File exist");
       sendError(Errno.EEXIST);
+      unlockFile(full_path);
       return;
     }
 
@@ -362,29 +416,34 @@ public class ServerParser extends ConnectionParser {
     if (!parent.exists()) {
       Logger.error("Parent doesn't exist");
       sendError(Errno.ENOENT);
+      unlockFile(full_path);
       return;
     }
 
     if (!parent.isDirectory()) {
       Logger.error("Parent isn't a directory");
       sendError(Errno.ENOTDIR);
+      unlockFile(full_path);
       return;
     }
 
     if (!parent.canWrite()) {
       Logger.error("Cannot write to parent");
       sendError(Errno.EACCES);
+      unlockFile(full_path);
       return;
     }
 
     if (!file.mkdir()) {
       Logger.error("Failed to create dir");
       sendError(Errno.EACCES);
+      unlockFile(full_path);
       return;
     }
 
     Logger.error("All good, replying");
     sendSucess();
+    unlockFile(full_path);
   }
 
   /**
