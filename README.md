@@ -72,7 +72,7 @@ server.
 
 The client offers a `REPL` so you can type commands interactively. Options like the server address as well as the server port (on both server and client) can be specified.
 
-You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
+You can also find the Protocol definition as a [pdf](https://github.com/Thynkon/dai-pw-02/releases/download/v1.0.0/protocol.pdf) or [typst](./docs/protocol.typ)
 
 ### Get the source code
 
