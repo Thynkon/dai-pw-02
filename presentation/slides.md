@@ -5,7 +5,7 @@ theme: default
 # like them? see https://unsplash.com/collections/94734566/slidev
 background: https://cover.sli.dev
 # some information about your slides (markdown enabled)
-title: DAI - PW01
+title: DAI - PW02
 # apply unocss classes to the current slide
 class: text-center
 # https://sli.dev/features/drawing
@@ -21,7 +21,7 @@ overviewSnapshots: true
 
 # DAI - PW01
 
-A compression tool written in modern JAVA
+A simple file transfer application written in JAVA
 
 ---
 
@@ -41,9 +41,10 @@ A compression tool written in modern JAVA
       <li>
         Git flow
         <ul>
-          <li>master</li>
+          <li>main</li>
+          <li>develop</li>
           <li>features</li>
-          <li>fix/hotfix</li>
+          <li>fix/hotfix/bugfix</li>
         </ul>
       </li>
     </ul>
