@@ -308,6 +308,8 @@ setup to pull the latest version from the [GitHub Container Registry](https://gi
 > To properly check if the file content you need to have another terminal open or
 > use a multiplexer such as [zellij](https://zellij.dev) or [tmux](https://github.com/tmux/tmux)
 
+[![asciicast](https://asciinema.org/a/mlgXHZX7MviE3ArVzCsYEnHHo.svg)](https://asciinema.org/a/mlgXHZX7MviE3ArVzCsYEnHHo)
+
 ```sh
 # Start the server
 docker compose up -d server
@@ -317,50 +319,178 @@ docker compose logs -f server
 
 # Start the client interactively
 docker compose run --rm client
+```
 
-# Now, both the client and server should show that the connection was established
-# and the client shows the '>' symbol to indicate that it is waiting for user input.
-# each line that starts with '>' here is a command that's sent through the client.
+> [!NOTE]
+> Now, both the client and server should show that the connection was established
+> and the client shows the `>` symbol to indicate that it is waiting for user input.
+> each line that starts with `>` here is a command that's sent through the client.
 
+```sh
 # List the content of the current working directory on the remote
 > list .
+```
 
+> ```txt
+> Sending: [LIST, .]
+>
+>  Got result:
+>
+>  remote_dir/
+>  .gitkeep
+>  some_remote_file.txt
+> ```
+
+```sh
 # Check that it corresponds to the content of server-data
 ls ./server-data
+```
 
+> ```txt
+> drwxr-xr-x  - mon  5 Dec 11:47 remote_dir
+> .rw-r--r-- 18 mon  5 Dec 11:47 some_remote_file.txt
+> ```
+
+```sh
 # Upload a text file
 > put local_dir/hello_world.txt ./
+```
 
+> ```txt
+> Sending file
+> Sending: [PUT, ./hello_world.txt, 12]
+> file sent
+> waiting for answer
+> Uploaded successfully
+> ```
+
+```sh
 # Check that the file was uploaded correctly
 diff -s client-data/local_dir/hello_world.txt server-data/hello_world.txt
+```
 
+> ```txt
+> Files client-data/local_dir/hello_world.txt and server-data/hello_world.txt are identical
+> ```
+
+```sh
 # Upload a binary file
 > put thynkon.jpg ./image.jpg
+```
 
+> ```txt
+> Sending file
+> Sending: [PUT, ./image.jpg, 979]
+> file sent
+> waiting for answer
+> Uploaded successfully
+> ```
+
+```sh
 # Check that the file was uploaded correctly
 diff -s client-data/thynkon.jpg server-data/image.jpg
+```
 
+> ```txt
+> Files client-data/thynkon.jpg and server-data/image.jpg are identical
+> ```
+
+```sh
 # Download a text file from the server
 > get some_remote_file.txt remote.txt
+```
 
+> ```txt
+> Sending: [GET, some_remote_file.txt]
+> Downloading file of length: 18
+> File created: /data/remote.txt
+> Writing local file:
+> ```
+
+```sh
 # Check that the file was downloaded correctly
 diff -s client-data/remote.txt server-data/some_remote_file.txt
+```
 
+> ```txt
+> Files client-data/remote.txt and server-data/some_remote_file.txt are identical
+> ```
+
+```sh
 # Download a binary file from the server
-> get remote_dir/mon.png local_dir/image.png
+> get remote_dir/mon.png local_dir/new_dir/image.png
+```
 
+> ```txt
+> Sending: [GET, remote_dir/mon.png]
+> Downloading file of length: 602
+> File created: /data/local_dir/new_dir/image.png
+> Writing local file:
+> ```
+
+```sh
 # Check that the file was downloaded correctly
-diff -s client-data/local_dir/image.png server-data/remote_dir/mon.png
+diff -s client-data/local_dir/new_dir/image.png server-data/remote_dir/mon.png
+```
 
+> ```txt
+> Files client-data/local_dir/new_dir/image.png and server-data/remote_dir/mon.png are identical
+> ```
+
+```sh
 # Remove a file on the remote
 > delete image.jpg
+```
 
+> ```txt
+> Sending: [DELETE, /data/image.jpg]
+> Target deleted successfully
+> ```
+
+```sh
 # Check that the file is actually removed
 ls server-data
+```
 
+> ```txt
+> drwxr-xr-x  - mon  5 Dec 11:47 remote_dir
+> .rw-r--r-- 12 mon  5 Dec 11:55 hello_world.txt
+> .rw-r--r-- 18 mon  5 Dec 11:47 some_remote_file.txt
+> ```
+
+```sh
+# Create a directory on the server
+> mkdir new_dir
+```
+
+> ```txt
+> Sending PUT request to create directory
+> Sending: [PUT, new_dir/]
+> directory created successfully
+> ```
+
+```sh
+# Check that the folder was created
+ls server-data
+```
+
+> ```txt
+> drwxr-xr-x  - mon  5 Dec 11:57 new_dir
+> drwxr-xr-x  - mon  5 Dec 11:47 remote_dir
+> .rw-r--r-- 12 mon  5 Dec 11:55 hello_world.txt
+> .rw-r--r-- 18 mon  5 Dec 11:47 some_remote_file.txt
+> ```
+
+```sh
 # Close the connection (You can also use Ctrl+d)
 > exit
+```
 
+> ```txt
+> [Client] Closing connection and quitting...
+> ```
+
+```sh
 # Stop the server
 docker compose down server
 ```
@@ -369,7 +499,8 @@ docker compose down server
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to
+learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
