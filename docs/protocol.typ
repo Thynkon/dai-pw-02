@@ -71,7 +71,8 @@ The client can do the following actions:
 
 The `Status` values use the values defined by the c standard library in
 #link("https://man7.org/linux/man-pages/man3/errno.3.html")[errno.h] or `0` to
-indicate success.
+indicate success. In other words, a integer value where `0` means OK, and any other value means 
+that there was an error.
 
 When an invalid message is received, the server should answer with `ENOTSUP`.
 
@@ -84,12 +85,35 @@ sending `<CODE>\x04` asfsfd `\x04` is the `EOT` (End Of Transmission) character.
 
 Even though you will find in the examples bellow the name of the actions in uppercase, the server accepts them in any form (upper, lower, mix of both, etc...).
 
+=== Valid messages
 The valid messages are:
 
 - `LIST` - List the contents of directories
 - `GET` - Downloads a file
 - `PUT` - Create a new file
 - `DELETE` - Delete a file
+
+=== Status codes
+
+Bellow is the list of all the status codes the server might return. We use the constant's names
+instead of the integer values in the description of each message because they come from the *errno.h* file
+and they are used as a standard in multiple programming languages.
+
+#table(
+  columns: (auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  table.header(
+    [*CONSTANT NAME*], [*INTEGER VALUE*], [*MEANING*],
+  ),
+  [], [`0`], [OK],
+  [`EACCES`], [`13`], [Permission denied],
+  [`ENOENT`], [`2`], [No such file or directory],
+  [`ENOTDIR`], [`20`], [Not a directory],
+  [`EINVAL`], [`22`], [Invalid argument],
+)
+
+#pagebreak()
 
 === LIST
 
@@ -120,9 +144,11 @@ appended to them.
 
 On error, only the error code is sent. `<CODE>` matches one of:
 - `EACCES`
+- `EFBIG`
+- `EINVAL`
+- `EISDIR`
 - `ENOENT`
 - `ENOTDIR`
-- `EINVAL`
 
 #pagebreak()
 
