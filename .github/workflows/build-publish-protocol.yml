@@ -21,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: PDF
-          path: application-protocol.pdf
+          path: protocol.pdf
 
       - name: Get current date
         id: date
