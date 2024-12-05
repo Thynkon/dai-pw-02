@@ -15,6 +15,7 @@ public class Server extends Service {
   public static final String DELIMITER = ":";
   public static final String NEW_LINE = "\n";
   public static final int EOT = 0x04;
+  public static final int max_upload_size = 500 * 1024 * 1024; // 500 MB
 
   /**
    * Server constructor

@@ -280,10 +280,15 @@ public class ServerParser extends ConnectionParser {
    * @throws IOException when unable to write to the socket output
    */
   private void put(Path path, int size) throws IOException {
-
     Path full_path = workDir.resolve(path).normalize();
     File file = full_path.toFile();
     Logger.debug("expected size: " + size);
+
+    // check if the file size is within the limits
+    if (size > Server.max_upload_size) {
+      sendError(Errno.EFBIG);
+      return;
+    }
 
     // create parent directories if needed
     Path parentDir = full_path.getParent();
