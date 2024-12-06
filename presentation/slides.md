@@ -19,7 +19,7 @@ mdc: true
 overviewSnapshots: true
 ---
 
-# DAI - PW01
+# DAI - PW02
 
 A simple file transfer application written in JAVA
 
@@ -63,11 +63,10 @@ A simple file transfer application written in JAVA
   <div>
     <ul>
       <li>Upload and download files on a server</li>
-      <li>Multiple clients in concurrency</li>
+      <li>Multiple connections at the same time</li>
       <li>Docker image on the GitHub Container Registry</li>
       <li>Maven package on the GitHub Package Registry</li>
       <li>Automatic builds using Github Actions</li>
-      <li>Automatic protocol documentation compilation</li>
     </ul>
   </div>
   <div class="flex flex-col space-y-10">
@@ -83,43 +82,31 @@ A simple file transfer application written in JAVA
 
 ---
 
-# Compression algorithms
 
-<!-- TODO: Remove this slide -->
+# Binary vs text files
 
-<div class="flex items-stretch justify-between">
-  <div class="basis-1/2 h-full">
-    <span class="text-lg">
-      RLE
-    </span>
-    <ul>
-      <li>Low memory usage</li>
-      <li>Fast and simple</li>
-      <img src="/assets/RLE-v1.svg" alt="RLE drawing" width="300"/>
-      <li>Derivative implementation</li>
-      <img src="/assets/RLE-v2.svg" alt="RLE drawing" width="300"/>
-    </ul>
-  </div>
-  <div class="basis-1/2">
-    <span class="text-lg">
-      LZW
-    </span>
-    <ul>
-      <li>Memory-intensive algorithm</li>
-      <li>Dictionnaries are built during runtime</li>
-    </ul>
-    <img src="https://www.eecs.yorku.ca/course_archive/2019-20/F/2030/labs/lab4/fig1c.png"  alt="drawing" width="300"/>
-  </div>
+<div class="flex items-center justify-between">
+  <div>LEFT</div>
+  <div class="flex flex-col space-y-10">RIGHT</div>
 </div>
 
 ---
 
-# Docker and Github Actions
+# Concurrency
+
+<div class="flex items-center justify-between">
+  <div>LEFT</div>
+  <div class="flex flex-col space-y-10">RIGHT</div>
+</div>
+
+---
+
+# Docker
 
 <div class="flex items-stretch justify-between gap-4">
   <div>
     <span class="text-lg">
-      Docker
+      server
     </span>
 
 ```bash
@@ -132,6 +119,11 @@ docker run --rm                   \
   --root-dir /data                \
   --connections 2
 ```
+  </div>
+  <div>
+  <span class="text-lg">
+    client
+  </span>
 
 ```bash
 docker run --rm                   \
@@ -141,14 +133,26 @@ docker run --rm                   \
   --address host.docker.internal  \
   --root-dir /data                \
 ```
+  </div>
+  <div>RIGHT</div>
+</div>
 
-  </div>
+---
+
+# Github actions
+
+<div class="flex items-stretch justify-between gap-4">
   <div>
-    <span class="text-lg">
-      Github actions
-    </span>
-    <img src="/assets/github-workflows.png" alt="github workflows configurations" width="300"/>
-  </div>
+      <img src="/assets/github-workflows-1.png" alt="github workflows configurations" width="500"/>
+    </div>
+    <div class="flex flex-col gap-10">
+      <div>
+        <img src="/assets/github-workflows-3.png" alt="github workflows configurations" width="400"/>
+      </div>
+      <div class="flex justify-center">
+        <img src="/assets/github-workflows-2.png" alt="github workflows configurations" width="200"/>
+      </div>
+    </div>
 </div>
 
 ---
