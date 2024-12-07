@@ -195,7 +195,7 @@ A simple file transfer application written in JAVA
       </ul>
     </div>
     <div class="flex flex-col gap-10 flex-1">
-      <img class="object-fit" src="/assets/buffers.png"/>
+      <img class="object-fit" src="/assets/buffers.svg"/>
     </div>
   </div>
 </div>
