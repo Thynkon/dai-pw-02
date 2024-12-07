@@ -80,6 +80,96 @@ A simple file transfer application written in JAVA
 
 # Protocol
 
+<div class="flex items-center justify-between">
+  <div>
+    <ul>
+      <li>
+        LIST &lt;REMOTE_PATH&gt;
+        <ul>
+          <li class="list-none">&lt;STATUS_CODE&gt;</li>
+          <li class="list-none">foldera/:folderb/:filea:file</li>
+        </ul>
+      </li>
+      <li>
+        GET &lt;REMOTE_PATH&gt;
+        <ul>
+          <li class="list-none">&lt;STATUS_CODE&gt;</li>
+          <li class="list-none">&lt;FILE_SIZE&gt;</li>
+          <li class="list-none">&lt;DATA&gt;</li>
+        </ul>
+      </li>
+      <li>
+        PUT &lt;LOCAL_PATH&gt; &lt;FILE_SIZE&gt;
+        <ul>
+          <li class="list-none">&lt;STATUS_CODE&gt;</li>
+        </ul>
+      </li>
+      <li>
+        DELETE &lt;REMOTE_PATH&gt;
+        <ul>
+          <li class="list-none">&lt;STATUS_CODE&gt;</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+  <div class="flex flex-col space-y-10">
+    <table class="table-auto">
+      <thead>
+        <tr>
+          <th>CONSTANT NAME</th>
+          <th>INTEGER VALUE</th>
+          <th>MEANING</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>EACCES</td>
+          <td>13</td>
+          <td>Permission denied</td>
+        </tr>
+        <tr>
+          <td>EFBIG</td>
+          <td>27</td>
+          <td>File too large</td>
+        </tr>
+        <tr>
+          <td>ENOENT</td>
+          <td>2</td>
+          <td>No such file or directory</td>
+        </tr>
+        <tr>
+          <td>EINVAL</td>
+          <td>22</td>
+          <td>Invalid argument</td>
+        </tr>
+        <tr>
+          <td>EISDIR</td>
+          <td>21</td>
+          <td>Is a directory</td>
+        </tr>
+        <tr>
+          <td>ENOTDIR</td>
+          <td>20</td>
+          <td>Not a directory</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+---
+
+# Protocol
+
+<div class="flex items-center justify-between">
+  <div>
+    <img class="object-fill h-full w-80" src="/assets/get.svg" alt="PUT action"/>
+  </div>
+  <div class="flex flex-col space-y-10">
+    <img class="object-fill h-full w-80" src="/assets/put.svg" alt="PUT action"/>
+  </div>
+</div>
+
 ---
 
 # Binary vs text files
