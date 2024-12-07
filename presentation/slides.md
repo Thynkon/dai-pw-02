@@ -232,9 +232,11 @@ static class ClientHandler implements Runnable {
 public void run() {/_ handle request _/}
 }
 
-````
+```
+
   </div>
   <div>
+
 ```java
 public class ServerParser extends ConnectionParser {
   ConcurrentHashMap<Path, ReentrantLock> fileLocks
@@ -258,7 +260,7 @@ public class ServerParser extends ConnectionParser {
     lockFile(full_path);
     unlockFile(full_path);
   }
-````
+```
 
   </div>
 </div>
