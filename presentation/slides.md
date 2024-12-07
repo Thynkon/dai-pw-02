@@ -82,7 +82,6 @@ A simple file transfer application written in JAVA
 
 ---
 
-
 # Binary vs text files
 
 <div class="flex items-center justify-between">
@@ -119,6 +118,7 @@ docker run --rm                   \
   --root-dir /data                \
   --connections 2
 ```
+
   </div>
   <div>
   <span class="text-lg">
@@ -133,6 +133,7 @@ docker run --rm                   \
   --address host.docker.internal  \
   --root-dir /data                \
 ```
+
   </div>
   <div>RIGHT</div>
 </div>
@@ -154,6 +155,14 @@ docker run --rm                   \
       </div>
     </div>
 </div>
+
+---
+
+# Demo
+
+<p style="opacity:1">
+<a href="https://asciinema.org/a/mlgXHZX7MviE3ArVzCsYEnHHo" target="_blank"><img src="https://asciinema.org/a/mlgXHZX7MviE3ArVzCsYEnHHo.svg" /></a>
+</p>
 
 ---
 
