@@ -174,22 +174,29 @@ A simple file transfer application written in JAVA
 
 # Binary and text on one socket
 
-<div class="flex items-start justify-between pt-8">
-  <div class="flex flex-col gap-10">
-    <h3>Why</h3>
-    <ul>
-      <li>A single connection</li>
-      <li>Support for text/binary files</li>
-    </ul>
+<div class="flex flex-col gap-6">
+  <div class="flex items-start justify-between">
+    <div class="flex flex-col gap-6 flex-1">
+      <h3>Why</h3>
+      <ul>
+        <li>A single connection</li>
+        <li>Support for text/binary files</li>
+      </ul>
+    </div>
   </div>
-  <div class="flex flex-col gap-10">
-    <h3>Issues</h3>
-    <ul>
-      <li>Need to share the input buffer</li>
-      <li>Can't use a marker for binary data</li>
-      <li>Hard to debug</li>
-      <li>Cannot use the provided UTF8 support</li>
-    </ul>
+  <div class="flex items-end justify-between">
+    <div class="flex flex-col gap-6 flex-1">
+      <h3>Issues</h3>
+      <ul>
+        <li>Need to share the input buffer</li>
+        <li>Can't use a marker for binary data</li>
+        <li>Hard to debug</li>
+        <li>Cannot use the provided UTF8 support</li>
+      </ul>
+    </div>
+    <div class="flex flex-col gap-10 flex-1">
+      <img class="object-fit" src="/assets/buffers.png"/>
+    </div>
   </div>
 </div>
 
