@@ -276,11 +276,12 @@ public class ServerParser extends ConnectionParser {
 
 # Docker
 
-<div class="flex items-stretch justify-between gap-4">
-  <div>
-    <span class="text-lg">
-      server
-    </span>
+<div class="flex justify-between  gap-4">
+  <div class="flex flex-col gap-4 flex-1">
+    <div>
+      <span class="text-lg">
+        server
+      </span>
 
 ```bash
 docker run --rm                   \
@@ -293,8 +294,8 @@ docker run --rm                   \
   --connections 2
 ```
 
-  </div>
-  <div>
+</div>
+<div>
   <span class="text-lg">
     client
   </span>
@@ -309,8 +310,52 @@ docker run --rm                   \
 ```
 
   </div>
-  <div>RIGHT</div>
+  </div>
+  <div class="flex flex-col gap-4 flex-1">
+    <div>
+      <span>
+        networking with compose
+      </span>
+
+```yml
+services:
+  server:
+    image: ghcr.io/thynkon/dai-pw-02:latest
+    ports:
+      - 1234:1234
+    networks:
+      - simpnet
+
+  client:
+    image: ghcr.io/thynkon/dai-pw-02:latest
+    depends_on:
+      - server
+    networks:
+      - simpnet
+
+networks:
+  simpnet:
+    driver: bridge
+```
+  </div>
+  </div>
 </div>
+
+<!-- I don't know why this is so sensitive to whitespace -->
+
+<!--
+  Inter container communication: In the example on screen, the containers are
+    isolated from each other so we need to expose the port on the host and the
+    target address for the client has to be the host ip. If we wanted to let the
+    containers communicate between each others we would need to create a docker
+    network, assign them to the network and they can communicate between each
+    other using their container ID.
+
+  Docker compose networking: Docker compose simplifies the networking part since
+    by default every service shares the same network and their name is used as
+    an alias to communicate
+
+-->
 
 ---
 
