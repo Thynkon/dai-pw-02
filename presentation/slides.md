@@ -172,12 +172,43 @@ A simple file transfer application written in JAVA
 
 ---
 
-# Binary vs text files
+# Binary and text on one socket
 
-<div class="flex items-center justify-between">
-  <div>LEFT</div>
-  <div class="flex flex-col space-y-10">RIGHT</div>
+<div class="flex items-start justify-between pt-8">
+  <div class="flex flex-col gap-10">
+    <h3>Why</h3>
+    <ul>
+      <li>A single connection</li>
+      <li>Support for text/binary files</li>
+    </ul>
+  </div>
+  <div class="flex flex-col gap-10">
+    <h3>Issues</h3>
+    <ul>
+      <li>Need to share the input buffer</li>
+      <li>Can't use a marker for binary data</li>
+      <li>Hard to debug</li>
+      <li>Cannot use the provided UTF8 support</li>
+    </ul>
+  </div>
 </div>
+
+<!--
+  Single connection: no need to manage two sockets at once as well as a map of
+    tokens to retrieve or send a file.
+
+  Buffer: The first version used BufferedWriter/Reader and later on we added
+    BufferedInput/OutputStream to handle the binary data which led to a lot of
+    debugging since the buffer would eat the data but not always. We had to
+    switch to a DataInputStream which still provided a buffer while being usable
+    for both text and binary data
+
+  UTF8 support: DataInputStream has both writeUTF and readUTF methods but those
+    implementations use the first two bytes to store the length of the string.
+    This would have been good to know before we started since that would have
+    solved our marker issue early on but with the current implementation there
+    would be a lot to change in both the application and the protocol.
+-->
 
 ---
 
@@ -198,9 +229,10 @@ public void launch() {
 }
 
 static class ClientHandler implements Runnable {
-  public void run() {/* handle request */}
+public void run() {/_ handle request _/}
 }
-```
+
+````
   </div>
   <div>
 ```java
@@ -226,7 +258,8 @@ public class ServerParser extends ConnectionParser {
     lockFile(full_path);
     unlockFile(full_path);
   }
-```
+````
+
   </div>
 </div>
 
