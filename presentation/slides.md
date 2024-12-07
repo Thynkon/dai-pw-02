@@ -183,9 +183,51 @@ A simple file transfer application written in JAVA
 
 # Concurrency
 
-<div class="flex items-center justify-between">
-  <div>LEFT</div>
-  <div class="flex flex-col space-y-10">RIGHT</div>
+<div class="flex items-center justify-between space-x-10">
+  <div class="flex flex-col space-y-20">
+```java
+public void launch() {
+  try (ServerSocket ServerSocket
+        = new ServerSocket(port, backlog, iaddress);
+      ExecutorService executor
+        = Executors.newFixedThreadPool(n);) {
+    while (!serverSocket.isClosed()) {
+      Socket clientSocket = serverSocket.accept();
+      executor.submit(new ClientHandler(clientSocket, this));
+    }
+}
+
+static class ClientHandler implements Runnable {
+  public void run() {/* handle request */}
+}
+```
+  </div>
+  <div>
+```java
+public class ServerParser extends ConnectionParser {
+  ConcurrentHashMap<Path, ReentrantLock> fileLocks
+      = new ConcurrentHashMap<>();
+
+  private ReentrantLock getLockForFile(Path filename) {
+    return fileLocks.computeIfAbsent(
+      filename, k -> new ReentrantLock()
+    );
+  }
+
+  private void lockFile(Path filename) {
+    getLockForFile(filename).lock();
+  }
+
+  private void unlockFile(Path filename) {
+    getLockForFile(filename).unlock();
+  }
+
+  private void list(Path path) throws IOException {
+    lockFile(full_path);
+    unlockFile(full_path);
+  }
+```
+  </div>
 </div>
 
 ---
