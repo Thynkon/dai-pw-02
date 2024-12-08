@@ -157,6 +157,15 @@ A simple file transfer application written in JAVA
   </div>
 </div>
 
+<!--
+- TCP
+- port 1234
+- messages en utf8
+- réponses binaire / texte
+- expliquer les 4 messages
+- expliquer pourquoi get et put on la taille du fichier (peut contenir 0x04)
+-->
+
 ---
 
 # Protocol
@@ -386,3 +395,7 @@ networks:
 ---
 
 # What could be improved
+
+- Compress files during upload / download
+- User authentication and authorisation to access files
+- Code refactor to use appropriate Java library to manipulate streams
